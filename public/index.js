@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
+            errorMessage.style.display = 'block';
             errorMessage.innerText = '';
 
             const formData = new URLSearchParams();
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   
                     const userRole = data.user?.role;
                     localStorage.setItem('userRole', userRole);
-
+                    
                     if (userRole === 'attendant') {
                         window.location.href = './atendente/menu.html';
                     } else if (userRole === 'kitchen') {

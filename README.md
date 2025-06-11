@@ -1,6 +1,4 @@
-# projeto_aplicado_foodtruck_frontend
-
-Projeto Aplicado: Food Truck
+# Projeto Aplicado: Food Truck
 Este projeto consiste em uma aplicação completa para gerenciar um negócio de food truck, dividida em dois módulos principais: Frontend (a interface do usuário) e Backend (a lógica de negócios e API).
 
 Este repositório é dedicado ao Frontend da aplicação.
@@ -48,7 +46,7 @@ Execute o Frontend: Para projetos puros de HTML/CSS/JS, você pode simplesmente 
 
 
 
-# Entendendo assets/js/common.js
+# Entendendo o common.js
 O arquivo assets/js/common.js centraliza a URL base do backend (API_BASE_URL) e outras variáveis/funções comuns para que o frontend se comunique corretamente com o servidor.
 
 

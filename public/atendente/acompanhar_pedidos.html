@@ -3,53 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhar Pedidos - FoodTruck</title>
+    <title>Chapeiro - Preparar Pedidos</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="../../assets/css/chapeiro.css">
 </head>
 <body>
     <header>
         <h1>Acompanhar Pedidos</h1>
         <nav>
-            <ul>
-                <li><a href="../dashboard.html">Dashboard</a></li>
-                <li><a href="menu.html">Menu (Registrar Pedido)</a></li>
-                <li><a href="acompanhar_pedidos.html">Acompanhar Pedidos</a></li>
-                <li><a href="../admin/gerenciar_produtos.html">Gerenciar Produtos</a></li>
+            <ul>               
+                <li><a href="menu.html">Voltar</a></li>
                 <li><a href="#" id="logoutBtn">Sair</a></li>
             </ul>
         </nav>
     </header>
 
-    <main>
-        <section id="orders-list-section">
-            <h2>Pedidos Atuais</h2>
-            <div id="ordersTableContainer">
-                <p id="loadingMessage">Carregando pedidos...</p>
-                <table id="ordersTable">
-                    <thead>
-                        <tr>
-                            <th>ID do Pedido</th>
-                            <th>Mesa</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th>Data/Hora</th>
-                            <th>Observações</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-                <p id="noOrdersMessage" style="display: none;">Nenhum pedido encontrado.</p>
+    <main class="container">
+        <section id="orders-section">
+            <h2>Gestão de Pedidos por Status</h2>
+            <p id="loadingMessage" class="message">Carregando pedidos...</p>
+            <p id="noOrdersMessage" class="message" style="display: none;">Nenhum pedido encontrado nos status visíveis.</p>
+
+            <div class="orders-board">
+                <div class="status-column" id="column-pending">
+                    <h3>Pendentes <span class="order-count" id="count-pending"> (0)</span></h3>
+                    <div class="orders-grid" id="pendingOrdersList">
+                        </div>
+                </div>
+
+                <div class="status-column" id="column-processing">
+                    <h3>Em Preparo <span class="order-count" id="count-processing"> (0)</span></h3>
+                    <div class="orders-grid" id="processingOrdersList">
+                        </div>
+                </div>
+
+                <div class="status-column" id="column-completed">
+                    <h3>Concluídos <span class="order-count" id="count-completed"> (0)</span></h3>
+                    <div class="orders-grid" id="completedOrdersList">
+                        </div>
+                </div>
+
+                <div class="status-column" id="column-cancelled">
+                    <h3>Cancelados <span class="order-count" id="count-cancelled"> (0)</span></h3>
+                    <div class="orders-grid" id="cancelledOrdersList">
+                        </div>
+                </div>
             </div>
         </section>
     </main>
 
     <footer>
-        <p>&copy; 2025 Projeto Aplicado. Todos os direitos reservados.</p>
+        <div class="container">
+            <p>&copy; 2025 Projeto Aplicado. Todos os direitos reservados.</p>
+        </div>
     </footer>
 
     <script src="../../assets/js/common.js"></script>
-    <script src="./acompanhar_pedidos.js"></script>
+    <script src="acompanhar_pedidos.js"></script>
 </body>
 </html>

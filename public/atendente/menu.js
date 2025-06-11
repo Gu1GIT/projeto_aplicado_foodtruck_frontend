@@ -3,6 +3,14 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+    // OCULTAR MENU ADMIN PARA ATENDENTE E CHAPEIRO
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'attendant' || userRole === 'kitchen') {
+        const menuItem = document.querySelector('li > a[href="../admin/gerenciar_produtos.html"]');
+        if (menuItem && menuItem.parentElement) {
+            menuItem.parentElement.style.display = 'none';
+        }
+    } 
     // NOVO: Referência para o campo de observações
     const orderNotesInput = document.getElementById('orderNotes');
 

@@ -34,8 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     localStorage.setItem('accessToken', data.access_token);
-
+                  
                     const userRole = data.user?.role;
+                    localStorage.setItem('userRole', userRole);
 
                     if (userRole === 'attendant') {
                         window.location.href = './atendente/menu.html';

@@ -133,14 +133,6 @@ button:active {
 }
 
 /* Specific button styles for clarity */
-#submitUpdateButton {
-    background-color: #28a745; /* Verde para update */
-}
-
-#submitUpdateButton:hover {
-    background-color: #218838;
-}
-
 #submitPatchButton {
     background-color: #ffc107; /* Amarelo/Laranja para patch */
     color: #333; /* Texto escuro para contraste */

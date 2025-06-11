@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const updateProductForm = document.getElementById('updateProductForm');
     const currentProductIdSpan = document.getElementById('currentProductId');
     const productDetailMessage = document.getElementById('productDetailMessage');
-    const submitUpdateButton = document.getElementById('submitUpdateButton');
     const submitPatchButton = document.getElementById('submitPatchButton');
     const deleteProductBtn = document.getElementById('deleteProductBtn');
 
@@ -245,58 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // --- PUT /api/v1/products/{product_id} (Update Product) ---
-    submitUpdateButton.addEventListener('click', async () => {
-        if (!currentEditProductId) {
-            alert('Nenhum produto selecionado para atualização.');
-            return;
-        }
-        productDetailMessage.innerText = '';
-
-        const updatedProduct = {
-            name: document.getElementById('updateName').value,
-            description: document.getElementById('updateDescription').value,
-            price: parseFloat(document.getElementById('updatePrice').value),
-            category: document.getElementById('updateCategory').value,
-        };
-
-        // Validação básica
-        if (!updatedProduct.name || isNaN(updatedProduct.price) || updatedProduct.price <= 0) {
-            productDetailMessage.style.color = 'red';
-            productDetailMessage.innerText = 'Nome e Preço (válido) são obrigatórios para atualização.';
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/products/${currentEditProductId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedProduct)
-            });
-
-            if (handleAuthError(response)) return;
-
-            const data = await response.json();
-
-            if (response.ok) {
-                productDetailMessage.style.color = 'green';
-                productDetailMessage.innerText = `Produto ID ${currentEditProductId} atualizado (PUT) com sucesso!`;
-                fetchProducts(); // Recarrega a lista
-            } else {
-                productDetailMessage.style.color = 'red';
-                productDetailMessage.innerText = data.detail || data.message || 'Erro ao atualizar produto (PUT).';
-                console.error('Erro ao atualizar produto (PUT):', data);
-            }
-        } catch (error) {
-            console.error('Erro na requisição de atualização (PUT):', error);
-            productDetailMessage.style.color = 'red';
-            productDetailMessage.innerText = 'Não foi possível conectar ao servidor para atualizar o produto.';
-        }
-    });
-
+   
     // --- PATCH /api/v1/products/{product_id} (Patch Product) ---
     submitPatchButton.addEventListener('click', async () => {
         if (!currentEditProductId) {

@@ -1,0 +1,313 @@
+/* public/assets/css/admin_produtos_minimal.css */
+
+/* Geral */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* Header */
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2em;
+}
+
+header nav {
+    margin-top: 10px;
+}
+
+header nav a {
+    color: #fff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.3s ease;
+}
+
+header nav a:hover {
+    background-color: #555;
+    border-radius: 4px;
+}
+
+/* Main Content */
+main {
+    padding: 20px 0;
+}
+
+section {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+h2 {
+    color: #007bff; /* Azul para títulos de seção */
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+h3 {
+    color: #555;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+/* Forms */
+form {
+    display: grid;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+input[type="text"],
+input[type="number"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que padding não aumente a largura total */
+    font-size: 1em;
+}
+
+input[type="checkbox"] {
+    margin-top: 5px;
+}
+
+textarea {
+    resize: vertical; /* Permite redimensionar verticalmente */
+    min-height: 80px;
+}
+
+button {
+    background-color: #007bff; /* Azul primário */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    align-self: start; /* Alinha o botão ao início da linha no grid */
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Specific button styles for clarity */
+#submitUpdateButton {
+    background-color: #28a745; /* Verde para update */
+}
+
+#submitUpdateButton:hover {
+    background-color: #218838;
+}
+
+#submitPatchButton {
+    background-color: #ffc107; /* Amarelo/Laranja para patch */
+    color: #333; /* Texto escuro para contraste */
+}
+
+#submitPatchButton:hover {
+    background-color: #e0a800;
+}
+
+#deleteProductBtn {
+    background-color: #dc3545; /* Vermelho para delete */
+}
+
+#deleteProductBtn:hover {
+    background-color: #c82333;
+}
+
+#fetchProductsBtn {
+    background-color: #6c757d; /* Cinza para fetch */
+}
+
+#fetchProductsBtn:hover {
+    background-color: #5a6268;
+}
+
+
+/* Messages */
+p[id$="Message"] { /* Seleciona parágrafos com IDs terminando em "Message" */
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#createProductMessage {
+    background-color: #e6ffe6; /* Fundo verde claro para sucesso */
+    border: 1px solid #4CAF50;
+    color: #218838;
+}
+
+#createProductMessage:empty {
+    display: none;
+}
+
+#productDetailMessage {
+    background-color: #e0f2ff; /* Fundo azul claro para info */
+    border: 1px solid #007bff;
+    color: #0056b3;
+}
+
+#productDetailMessage:empty {
+    display: none;
+}
+
+/* Product List */
+#productsList {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+#productsList li {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+#productsList li:hover {
+    background-color: #f0f0f0;
+}
+
+#productsList li strong {
+    color: #007bff;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Permite que os itens quebrem a linha em telas menores */
+}
+
+.filter-controls input {
+    width: 80px; /* Ajuste para inputs de número */
+    text-align: center;
+}
+
+/* Product Details Form */
+#updateProductForm {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+    margin-top: 20px;
+    display: grid; /* Mantém o grid para o formulário de edição */
+}
+
+#updateProductForm h3 {
+    margin-bottom: 20px;
+    color: #007bff;
+}
+
+#updateProductForm button {
+    margin-top: 10px;
+    width: auto; /* Botões de formulário de detalhes podem ter largura auto */
+    margin-right: 10px; /* Espaço entre os botões */
+}
+
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1rem 0;
+    background-color: #333;
+    color: #fff;
+    margin-top: 20px;
+}
+
+/* Responsividade Básica */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    form {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-controls input,
+    .filter-controls button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+.inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+}
+.inline-form .form-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+}
+.inline-form textarea,
+.inline-form input[type="text"],
+.inline-form input[type="number"] {
+    min-width: 180px;
+    max-width: 220px;
+    width: 220px;
+    box-sizing: border-box;
+    height: 38px;
+}
+.inline-form textarea {
+    resize: vertical;
+    min-height: 38px;
+    max-height: 38px;
+}
+.inline-form button {
+    height: 38px;
+    align-self: flex-end;
+}

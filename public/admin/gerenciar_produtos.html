@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gerenciar Produtos</title>
+    <link rel="stylesheet" href="../../assets/css/gerenciar_produtos.css">
+    
+</head>
+<body>
+    <header>
+        <h1>Gerenciamento de Produtos</h1>
+        <nav>           
+            <a href="../atendente/menu.html">Menu (Registrar Pedido)</a>  
+           
+        </nav>
+    </header>
+    <main>
+        <section class="product-management">
+            <h2>Criar Novo Produto</h2>
+            <form id="createProductForm" class="inline-form">
+                <div class="form-group">
+                    <label for="createName">Nome:</label>
+                    <input type="text" id="createName" required>
+                </div>
+                <div class="form-group">
+                    <label for="createPrice">Preço:</label>
+                    <input type="number" id="createPrice" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="createDescription">Descrição:</label>
+                    <textarea id="createDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="createCategory">Categoria:</label>
+                    <input type="text" id="createCategory">
+                </div>
+                <button type="submit">Criar Produto</button>
+            </form>
+            <p id="createProductMessage" style="color: green;"></p>
+        </section>
+
+        <section class="product-list">
+            <h2>Lista de Produtos</h2>
+            <div class="filter-controls">
+                <label for="offset">Offset:</label>
+                <input type="number" id="offset" value="0" min="0">
+                <label for="limit">Limit:</label>
+                <input type="number" id="limit" value="10" min="1" max="100">
+                <button id="fetchProductsBtn">Carregar Produtos</button>
+            </div>
+            <ul id="productsList">
+                <li>Carregando produtos...</li>
+            </ul>
+            <p id="productsPaginationInfo"></p>
+        </section>
+
+        <section class="product-details" >
+            <h2>Detalhes e Edição de Produto</h2>
+            <div class="form-group">
+                <label for="getProductId">ID do Produto:</label>
+                <input type="text" id="getProductId">
+                <button id="getProductBtn">Buscar Produto</button>
+            </div>
+            <form id="updateProductForm" class="inline-form" style="display: none;">
+                <h3>Editar Produto <span id="currentProductId"></span></h3>
+                <div class="form-group">
+                    <label for="updateName">Nome:</label>
+                    <input type="text" id="updateName">
+                </div>
+                <div class="form-group">
+                    <label for="updateDescription">Descrição:</label>
+                    <textarea id="updateDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="updatePrice">Preço:</label>
+                    <input type="text" id="updatePrice" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="updateCategory">Categoria:</label>
+                    <input type="text" id="updateCategory">
+                </div>
+                <button type="submit" id="submitUpdateButton">Atualizar Produto (PUT)</button>
+                <button type="button" id="submitPatchButton">Atualizar Parcial (PATCH)</button>
+                <button type="button" id="deleteProductBtn">Deletar Produto</button>
+            </form>
+            <p id="productDetailMessage" style="color: blue;"></p>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Projeto Aplicado. Todos os direitos reservados.</p>
+    </footer>
+    <script src="../../assets/js/common.js"></script>
+    <script src="./gerenciar_produtos.js"></script>
+</body>
+</html>

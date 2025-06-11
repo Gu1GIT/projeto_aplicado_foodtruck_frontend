@@ -1,0 +1,392 @@
+/* Estilos gerais para o corpo e layout principal */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f2f5;
+    color: #333;
+}
+
+.container {
+    width: 95%; /* Aumentado para 95% para dar mais espaço às colunas */
+    max-width: 1400px; /* Limite máximo para o container */
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+header {
+    background-color: #343a40;
+    color: white;
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8em;
+    text-align: center;
+}
+
+header nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: right;
+}
+
+header nav ul li {
+    display: inline;
+    margin-left: 20px;
+}
+
+header nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+main {
+    padding: 20px 0;
+}
+
+/* Seção de Pedidos */
+#orders-section h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    font-size: 2em;
+}
+
+.message {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+/* Contêiner principal das colunas (Quadro de Kanban) */
+.orders-board {
+    display: flex; /* Transforma em um contêiner flexível */
+    gap: 15px; /* Espaço entre as colunas */
+    margin-top: 20px;
+    flex-wrap: wrap; /* Permite que as colunas quebrem para a linha de baixo em telas menores */
+    overflow-x: auto; /* Adiciona scroll horizontal se as colunas não couberem */
+    padding-bottom: 10px; /* Para não cortar a scrollbar horizontal */
+    justify-content: flex-start; /* Alinha as colunas ao início */
+}
+
+/* Estilo para cada coluna de status */
+.status-column {
+    /* Use flex-basis para dar uma largura base e flex-shrink para permitir que encolham */
+    /* Permite que as colunas cresçam (1), encolham (0 - para evitar que fiquem muito pequenas),
+       e tenham uma base de 25% menos os gaps */
+    flex: 1 0 calc(25% - 11.25px); /* (4 colunas * 25% = 100%) - (3 * gap de 15px) / 4 colunas */
+                                   /* 11.25px = (3 * 15px) / 4 */
+    min-width: 240px; /* Largura mínima para a coluna */
+
+    background-color: #ffffff; /* Fundo branco para as colunas */
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08); /* Sombra mais visível para as colunas */
+    display: flex;
+    flex-direction: column; /* Conteúdo da coluna (título, grid) empilhado */
+    border: 1px solid #e0e0e0; /* Borda suave para as colunas */
+}
+
+.status-column h3 {
+    text-align: center;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #ddd; /* Separador para o título */
+}
+
+.status-column .order-count {
+    font-size: 0.9em;
+    color: #666;
+    font-weight: normal;
+}
+
+/* Ajuste para o grid de pedidos dentro de cada coluna */
+.status-column .orders-grid {
+    display: flex; /* Muda para flexbox para empilhar os cards verticalmente */
+    flex-direction: column;
+    gap: 15px; /* Espaçamento entre os cards dentro da coluna */
+    flex-grow: 1; /* Faz com que o grid ocupe o espaço restante na coluna */
+    overflow-y: auto; /* Adiciona scroll se houver muitos pedidos */
+    max-height: calc(100vh - 300px); /* Ajuste a altura máxima conforme necessário (Altura da viewport - altura do header/footer/margens) */
+    padding-right: 5px; /* Espaço para a scrollbar */
+    padding-bottom: 1px; /* Evita que o último card seja cortado na borda da scrollbar */
+}
+
+/* Estilo para cada card de pedido */
+.order-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.order-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+/* Ajuste no order-header - agora só tem o H3 */
+.order-header {
+    display: flex; /* Mantém flex para centralização se quiser */
+    justify-content: center; /* Centraliza o título "Pedido: T120" */
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.order-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+    color: #333; /* Cor do texto (preto ou um cinza escuro) */
+    font-weight: bold;
+
+    /* NOVAS PROPRIEDADES PARA O FUNDO CINZA E ARREDONDAMENTO */
+    background-color: #e9ecef; /* Fundo cinza claro */
+    padding: 5px 10px; /* Espaçamento interno */
+    border-radius: 5px; /* Cantos levemente arredondados */
+    display: inline-block; /* Importante para que o padding e background funcionem corretamente */
+}
+
+.order-status-display {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #666;
+    text-align: center;
+    font-weight: bold;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    color: white; /* Cor padrão para texto do badge */
+    margin-left: 5px;
+}
+
+/* Cores dos badges de status */
+.status-badge.pending {
+    background-color: #ffc107; /* Amarelo */
+    color: #333; /* Texto escuro para contraste */
+}
+.status-badge.processing {
+    background-color: #007bff; /* Azul */
+}
+.status-badge.completed {
+    background-color: #28a745; /* Verde */
+}
+.status-badge.cancelled {
+    background-color: #dc3545; /* Vermelho */
+}
+
+.order-details {
+    margin-bottom: 10px;
+    flex-grow: 1; /* Permite que os detalhes do pedido ocupem o espaço disponível */
+}
+
+.order-details h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #444;
+    font-size: 1em;
+}
+
+.order-items-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.order-items-list li {
+    font-size: 0.9em;
+    padding: 3px 0;
+    border-bottom: 1px dashed #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-items-list li:last-child {
+    border-bottom: none;
+}
+
+.item-quantity {
+    font-weight: bold;
+    color: #007bff;
+    margin-left: 5px;
+}
+
+.item-price {
+    font-weight: bold;
+    color: #28a745;
+}
+
+.order-notes {
+    font-size: 0.85em;
+    color: #777;
+    margin-top: 10px;
+    padding-top: 5px;
+    border-top: 1px dashed #f0f0f0;
+}
+
+.order-total {
+    text-align: right;
+    font-size: 1.1em;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Seção de Ações do Pedido (Dropdown e Botão) */
+.order-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px; /* Espaçamento entre o select e o botão */
+    margin-top: auto; /* Empurra para a parte inferior do card */
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* Estilos para o dropdown de status */
+.order-actions .status-select {
+    flex-grow: 1; /* Ocupa o espaço restante dentro do flexbox */
+    padding: 6px 10px; /* Reduz um pouco o padding */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f8f8f8;
+    font-size: 0.9em; /* Reduz um pouco a fonte */
+    color: #333;
+    appearance: none; /* Remove o estilo padrão do sistema operacional para o select */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2C197.942%20L150.3%2C57.442%20L13.6%2C197.942%20H287%20Z%22%2F%3E%3C%2Fsvg%3E'); /* Ícone de seta personalizado */
+    background-repeat: no-repeat;
+    background-position: right 8px center; /* Ajusta a posição da seta */
+    background-size: 10px; /* Ajusta o tamanho da seta */
+    cursor: pointer;
+}
+
+/* Estilo para opções desabilitadas no select (o status atual) */
+.order-actions .status-select option[disabled] {
+    color: #777; /* Cor mais suave */
+    background-color: #e9e9e9;
+    font-weight: bold;
+}
+
+/* Estilo para o botão Atualizar */
+.order-actions .update-status-btn {
+    padding: 6px 12px; /* Reduz um pouco o padding */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em; /* Reduz um pouco a fonte */
+    font-weight: bold;
+    transition: background-color 0.2s ease-in-out;
+    white-space: nowrap; /* Impede que o texto do botão quebre */
+}
+
+/* Cores do botão (pode ser ajustado) */
+.order-actions .btn-primary {
+    background-color: #007bff; /* Azul */
+    color: white;
+}
+
+.order-actions .btn-primary:hover {
+    background-color: #0056b3; /* Azul mais escuro no hover */
+}
+
+/* Estilo para o botão Atualizar quando desabilitado */
+.order-actions .update-status-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* NOVO ESTILO: Para o ID na parte inferior do card */
+.order-footer-id {
+    text-align: center; /* Centraliza o texto do ID */
+    margin-top: 15px; /* Espaçamento do conteúdo acima */
+    padding-top: 10px; /* Espaçamento interno */
+    border-top: 1px dashed #e0e0e0; /* Linha discreta para separar */
+    font-size: 0.75em; /* Bem pequeno e discreto */
+    color: #999; /* Cor cinza para discrição */
+    font-family: monospace; /* Fonte monoespaçada para o ID */
+}
+
+.order-footer-id .order-id-display {
+    opacity: 0.8; /* Torna um pouco transparente para ser discreto */
+}
+
+/* Rodapé */
+footer {
+    background-color: #343a40;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    margin-top: 30px;
+    font-size: 0.9em;
+}
+
+/* Estilos para scrollbar (WebKit - Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px; /* Para a scrollbar horizontal */
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Media Queries para Responsividade */
+@media (max-width: 1200px) {
+    .status-column {
+        flex: 1 0 calc(33.33% - 10px); /* 3 colunas em telas médias */
+        min-width: 280px; /* Aumenta a min-width para 3 colunas */
+    }
+}
+
+@media (max-width: 900px) {
+    .status-column {
+        flex: 1 0 calc(50% - 10px); /* 2 colunas em telas menores */
+        min-width: 300px; /* Aumenta a min-width para 2 colunas */
+    }
+}
+
+@media (max-width: 600px) {
+    .orders-board {
+        flex-direction: column; /* Pilha as colunas em telas muito pequenas */
+        gap: 15px;
+    }
+    .status-column {
+        flex: 0 0 100%; /* Cada coluna ocupa 100% da largura */
+        min-width: auto; /* Remove a largura mínima */
+    }
+}

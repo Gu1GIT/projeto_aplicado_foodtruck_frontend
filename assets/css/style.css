@@ -1,0 +1,197 @@
+/* assets/css/style.css */
+/* Estilos básicos para o layout, cores, fontes, etc. */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 1em 0;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+header h1 {
+    margin: 0;
+    padding-bottom: 10px;
+}
+
+nav {
+    margin-top: 10px;
+}
+
+/* NOVAS REGRAS: Para estilizar a lista de navegação (ul e li) */
+nav ul {
+    list-style-type: none; /* Remove as bolinhas da lista */
+    padding: 0;
+    margin: 0;
+    display: flex; /* Torna a lista um flex container */
+    justify-content: center; /* Centraliza os itens horizontalmente */
+    flex-wrap: wrap; /* Permite que os itens quebrem a linha em telas pequenas */
+    gap: 15px; /* Adiciona espaço entre os itens do menu */
+}
+
+nav li {
+    margin: 0; /* Remove margens padrão dos itens de lista */
+}
+
+/* FIM DAS NOVAS REGRAS */
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    padding: 0.7em 1.2em;
+    /* Remover margin: 0 5px; daqui se o 'gap' em nav ul for suficiente */
+    /* Se quiser mais espaço, pode manter o 'margin' junto com 'gap' */
+    margin: 0 5px; 
+    border: 1px solid #fff;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+    background-color: #555;
+}
+
+main {
+    padding: 20px;
+    max-width: 960px;
+    margin: 20px auto;
+    background-color: #fff;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+footer {
+    text-align: center;
+    padding: 1.5em 0;
+    background-color: #333;
+    color: #fff;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    margin-top: 30px;
+}
+
+.login-container, .menu-list, .order-registration, .order-tracking, .review-registration, .order-preparation {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: #007bff;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: calc(100% - 22px); /* Ajusta para padding e borda */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-right: 10px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+ul#menuItems li,
+ul#activeOrdersList li,
+ul#pendingOrdersList li,
+ul#currentOrderList li {
+    border: 1px solid #eee;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+ul#currentOrderList li {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-status {
+    font-weight: bold;
+    color: #28a745; /* Cor para status positivo */
+}
+
+/* Estilos para botões de atualização dentro das listas */
+.update-status-btn, .add-to-order-btn, .remove-item-btn {
+    background-color: #6c757d; /* Cinza para ações secundárias */
+    padding: 8px 12px;
+    font-size: 0.9em;
+    margin-top: 5px; /* Espaçamento dos botões em lista */
+}
+
+.update-status-btn:hover, .add-to-order-btn:hover, .remove-item-btn:hover {
+    background-color: #5a6268;
+}
+
+.remove-item-btn {
+    background-color: #dc3545; /* Vermelho para remover */
+}
+
+.remove-item-btn:hover {
+    background-color: #c82333;
+}
+
+/* Mensagens de feedback */
+p#errorMessage, p#orderConfirmationMessage, p#reviewConfirmationMessage {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+p#errorMessage {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+p#orderConfirmationMessage, p#reviewConfirmationMessage {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}

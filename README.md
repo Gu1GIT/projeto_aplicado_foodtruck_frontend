@@ -1,0 +1,1 @@
+# projeto_aplicado_foodtruck_frontend

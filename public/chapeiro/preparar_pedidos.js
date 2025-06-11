@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const result = await response.json();
 
                 if (response.ok) {
-                    alert(`Status do Pedido #${orderId.substring(0, 12)} atualizado para "${newStatus}".`);
+                    //alert(`Status do Pedido #${orderId.substring(0, 12)} atualizado para "${newStatus}".`);
                     loadAllOrders(); // Recarrega TODOS os pedidos para que sejam redistribuídos corretamente
                 } else {
                     alert(result.detail || result.message || 'Erro ao atualizar status do pedido. Verifique as transições permitidas no backend.');

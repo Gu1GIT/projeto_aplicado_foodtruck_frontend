@@ -390,3 +390,23 @@ footer {
         min-width: auto; /* Remove a largura mínima */
     }
 }
+
+/* ...existing code... */
+.order-card {
+    background: #fff;
+    color: #222;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    padding: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    cursor: grab;
+    border: 2px solid transparent;
+    transition: border 0.2s;
+}
+.order-card.dragging {
+    opacity: 0.5;
+    border: 2px dashed #007bff;
+}
+.orders-grid.over {
+    background: #444;
+}

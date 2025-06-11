@@ -120,16 +120,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let statusOptionsHtml = '';
                         const allStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'];
 
-                        let allowedNextStatuses = [];
-                        if (displayStatus === 'PENDING') {
-                            allowedNextStatuses = ['PROCESSING', 'CANCELLED'];
-                        } else if (displayStatus === 'PROCESSING') {
-                            allowedNextStatuses = ['COMPLETED', 'CANCELLED'];
-                        } else if (displayStatus === 'COMPLETED') {
-                            allowedNextStatuses = ['PROCESSING', 'CANCELLED']; // Exemplo: permite reativar ou cancelar um completo
-                        } else if (displayStatus === 'CANCELLED') {
-                            allowedNextStatuses = ['PENDING']; // Exemplo: permite reabrir um cancelado
-                        }
+                        const statusTransitions = {
+                            PENDING:      ['CANCELLED'],
+                            PROCESSING:   ['CANCELLED'],
+                            COMPLETED:    ['CANCELLED'], // Exemplo: permite cancelar um pedido já concluído
+                            CANCELLED:    ['PENDING']    // Exemplo: permite reabrir um pedido cancelado
+                        };
+
+                        let allowedNextStatuses = statusTransitions[displayStatus] || [];
+
 
                         // Inclui o status atual como selecionado e desabilitado
                         // e adiciona os status permitidos como opções selecionáveis.

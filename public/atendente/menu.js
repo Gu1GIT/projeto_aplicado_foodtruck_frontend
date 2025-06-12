@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return 8; // Se não há pedidos na fila, o primeiro leva 8 min
         }
         // Calcula o tempo base para os pedidos existentes na fila
-        const baseBlocks = Math.floor((pendingOrProcessingOrders + 1) / 2); // +1 para o pedido atual
+        const baseBlocks = Math.ceil((pendingOrProcessingOrders + 1) / 2); // +1 para o pedido atual
         const baseTime = baseBlocks * 8; // Cada bloco leva 8 minutos        
         return baseTime;
     }

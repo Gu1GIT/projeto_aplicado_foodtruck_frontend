@@ -391,22 +391,29 @@ footer {
     }
 }
 
-/* ...existing code... */
-.order-card {
-    background: #fff;
-    color: #222;
-    border-radius: 6px;
-    margin-bottom: 10px;
+/* public/css/chapeiro.css ou styles.css */
+
+.filter-controls-container {
+    text-align: center; /* Centraliza o conteúdo dentro deste container */
+    margin-bottom: 20px; /* Adiciona um espaço abaixo do botão */
     padding: 10px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
-    cursor: grab;
-    border: 2px solid transparent;
-    transition: border 0.2s;
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.order-card.dragging {
-    opacity: 0.5;
-    border: 2px dashed #007bff;
+
+.filter-toggle-btn {
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    transition: background-color 0.3s ease;
 }
-.orders-grid.over {
-    background: #444;
+
+/* Estilos para o botão quando ele está filtrando para "hoje" */
+.filter-toggle-btn.active {
+    background-color: #28a745; /* Uma cor que indica "ativo" ou "filtrado" */
+    color: white;
 }
+

@@ -1,315 +1,422 @@
 // public/chapeiro/preparar_pedidos.js
-// Lógica para carregar pedidos por status em colunas e permitir a mudança de status.
+// Lógica para carregar pedidos por status em colunas e permitir a mudança de status,
+// incluindo filtro por data de criação com um botão de alternância.
 
+// --- Constantes para Status de Pedidos ---
+const STATUS_PEDIDO = {
+    PENDENTE: 'PENDING',
+    EM_PREPARACAO: 'PROCESSING',
+    CONCLUIDO: 'COMPLETED',
+    CANCELADO: 'CANCELLED'
+};
+
+// --- Constantes para Mensagens e URLs ---
+const MENSAGENS = {
+    AUTENTICACAO_NECESSARIA: 'Você precisa estar logado para acessar esta página.',
+    SESSAO_EXPIRADA: 'Sessão expirada ou acesso negado. Faça login novamente.',
+    ERRO_CONFIGURACAO_API: 'Erro de configuração: API_BASE_URL não encontrada.',
+    ERRO_CARREGAR_PEDIDOS: 'Erro ao carregar pedidos:',
+    ERRO_CONEXAO_SERVIDOR: 'Não foi possível conectar ao servidor.',
+    CONFIRMACAO_ATUALIZACAO: (id, novoStatus) => `Deseja realmente mudar o status do pedido #${id} para "${novoStatus}"?`,
+    ERRO_ATUALIZAR_STATUS: 'Erro ao atualizar status do pedido. Verifique as transições permitidas no backend.'
+};
+
+const URLS = {
+    LOGIN: '../index.html'
+};
+
+// --- Variáveis de Estado Global ---
+let isFilteredByToday = true; // Começamos com os pedidos de hoje filtrados por padrão
+
+// --- Referências Globais para os Elementos DOM ---
+// Declaradas aqui para serem acessíveis por todas as funções após o DOM ser carregado.
+let pendingOrdersList;
+let processingOrdersList;
+let completedOrdersList;
+let cancelledOrdersList;
+
+let countPending;
+let countProcessing;
+let countCompleted;
+let countCancelled;
+
+let loadingMessage;
+let noOrdersMessage;
+let logoutBtn;
+let toggleFilterBtn; // Nova referência para o botão único de filtro
+
+// --- Funções Auxiliares ---
+
+/**
+ * Obtém o token de acesso do localStorage.
+ * @returns {string|null} O token de acesso ou null se não existir.
+ */
+const obterTokenAcesso = () => localStorage.getItem('accessToken');
+
+/**
+ * Remove os dados de sessão do localStorage.
+ */
+const removerDadosSessao = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('currentOrder');
+};
+
+/**
+ * Redireciona o usuário para a página de login.
+ */
+const redirecionarParaLogin = () => {
+    window.location.href = URLS.LOGIN;
+};
+
+/**
+ * Lida com erros de autenticação ou autorização da API, redirecionando para o login se necessário.
+ * @param {Response} resposta - A resposta da requisição fetch.
+ * @returns {boolean} True se um erro de autenticação/autorização foi tratado, false caso contrário.
+ */
+function lidarComErroAutenticacao(resposta) {
+    if (resposta.status === 401 || resposta.status === 403) {
+        alert(MENSAGENS.SESSAO_EXPIRADA);
+        removerDadosSessao();
+        redirecionarParaLogin();
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Formata uma string de data ISO para o formato local brasileiro (DD/MM/AAAA HH:MM).
+ * @param {string} dataString - A string de data ISO (ex: "2025-06-10T11:01:07.937046").
+ * @returns {string} A data formatada.
+ */
+const formatarDataCriacao = (dataString) => {
+    const dataCriacaoPedido = new Date(dataString);
+    return dataCriacaoPedido.toLocaleString('pt-BR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Sao_Paulo' // Fuso horário de Florianópolis
+    });
+};
+
+/**
+ * Gera o HTML para a lista de itens de um pedido.
+ * @param {Array<Object>} itensPedido - Um array de objetos de item de pedido.
+ * @returns {string} O HTML formatado da lista de itens.
+ */
+const gerarHtmlItensPedido = (itensPedido) => {
+    if (!itensPedido || itensPedido.length === 0) {
+        return '<li>Nenhum item detalhado disponível.</li>';
+    }
+    return itensPedido.map(item => `
+        <li>
+            ${item.product_name || `(ID: ${item.product_id})`}
+            <span class="item-quantity">x${item.quantity}</span>
+            <span class="item-price">R$ ${item.price ? item.price.toFixed(2) : '0.00'}</span>
+        </li>`
+    ).join('');
+};
+
+// --- Função para Carregar Pedidos (Requisição GET) ---
+/**
+ * Carrega e exibe os pedidos por status nas respectivas colunas,
+ * aplicando o filtro de data com base na variável de estado global `isFilteredByToday`.
+ */
+async function carregarTodosPedidos() {
+    // Exibe mensagem de carregamento e oculta a de "sem pedidos"
+    loadingMessage.style.display = 'block';
+    noOrdersMessage.style.display = 'none';
+
+    // Limpa todas as colunas
+    pendingOrdersList.innerHTML = '';
+    processingOrdersList.innerHTML = '';
+    completedOrdersList.innerHTML = '';
+    cancelledOrdersList.innerHTML = '';
+
+    // Reseta contadores
+    let contagens = {
+        [STATUS_PEDIDO.PENDENTE]: 0,
+        [STATUS_PEDIDO.EM_PREPARACAO]: 0,
+        [STATUS_PEDIDO.CONCLUIDO]: 0,
+        [STATUS_PEDIDO.CANCELADO]: 0
+    };
+
+    try {
+        const queryParams = new URLSearchParams();
+        // Adiciona todos os status que queremos exibir
+        Object.values(STATUS_PEDIDO).forEach(status => queryParams.append('status', status));
+
+        // Constrói a URL da API. Assume que API_BASE_URL NÃO termina com barra.
+        const resposta = await fetch(`${API_BASE_URL}/api/v1/orders/?${queryParams.toString()}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${obterTokenAcesso()}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (lidarComErroAutenticacao(resposta)) {
+            loadingMessage.style.display = 'none';
+            return;
+        }
+
+        const resultado = await resposta.json();
+
+        if (resposta.ok) {
+            let pedidos = resultado.orders; // Obtenha o array de pedidos
+            loadingMessage.style.display = 'none';
+
+            // --- Aplica o filtro de data no frontend se `isFilteredByToday` for true ---
+            if (isFilteredByToday && pedidos?.length) {
+                // Obtém a data atual em Florianópolis para comparação
+                const dataAtualFlorianopolis = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                const diaAtual = dataAtualFlorianopolis.getDate();
+                const mesAtual = dataAtualFlorianopolis.getMonth();
+                const anoAtual = dataAtualFlorianopolis.getFullYear();
+
+                pedidos = pedidos.filter(pedido => {
+                    const dataPedido = new Date(pedido.created_at);
+                    // Converte a data do pedido para o fuso horário de Florianópolis para comparação precisa
+                    const dataPedidoFlorianopolis = new Date(dataPedido.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+
+                    return dataPedidoFlorianopolis.getDate() === diaAtual &&
+                           dataPedidoFlorianopolis.getMonth() === mesAtual &&
+                           dataPedidoFlorianopolis.getFullYear() === anoAtual;
+                });
+            }
+
+            if (!pedidos?.length) { // Verifica se não há pedidos após o filtro
+                noOrdersMessage.style.display = 'block';
+            } else {
+                // Itera sobre os pedidos e os distribui nas colunas
+                pedidos.forEach(pedido => {
+                    const { id, locator, status, items, notes, total, created_at } = pedido;
+                    const statusExibicao = status.toUpperCase();
+
+                    const cartaoPedido = document.createElement('div');
+                    cartaoPedido.classList.add('order-card', statusExibicao.toLowerCase());
+
+                    const htmlItens = gerarHtmlItensPedido(items);
+
+                    // --- Regras de Transição de Status ---
+                    const transicoesStatus = {
+                        [STATUS_PEDIDO.PENDENTE]: [STATUS_PEDIDO.EM_PREPARACAO, STATUS_PEDIDO.CANCELADO],
+                        [STATUS_PEDIDO.EM_PREPARACAO]: [STATUS_PEDIDO.CONCLUIDO, STATUS_PEDIDO.CANCELADO],
+                        [STATUS_PEDIDO.CONCLUIDO]: [STATUS_PEDIDO.CANCELADO],
+                        [STATUS_PEDIDO.CANCELADO]: [STATUS_PEDIDO.PENDENTE]
+                    };
+
+                    const proximoStatusPermitido = transicoesStatus[statusExibicao] || [];
+
+                    let htmlOpcoesStatus = `
+                        <select class="status-select" data-order-id="${id}">
+                            <option value="${statusExibicao}" selected disabled>${statusExibicao}</option>
+                            ${proximoStatusPermitido.map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                        <button class="update-status-btn btn-primary" data-order-id="${id}" disabled>Atualizar</button>
+                    `;
+
+                    const dataFormatadaCriacao = formatarDataCriacao(created_at);
+
+                    cartaoPedido.innerHTML = `
+                        <div class="order-header">
+                            <h3>Pedido: ${locator || 'N/A'}</h3>
+                        </div>
+                        <p class="order-status-display">Status: <span class="status-badge ${statusExibicao.toLowerCase()}">${statusExibicao}</span></p>
+                        <div class="order-details">
+                            <h4>Itens:</h4>
+                            <ul class="order-items-list">${htmlItens}</ul>
+                            <p class="order-notes">Observações: ${notes || 'N/A'}</p>
+                            <p class="order-total">Total: <strong>R$ ${total ? total.toFixed(2) : '0.00'}</strong></p>
+                            <p class="order-created-at">Criado em: ${dataFormatadaCriacao}</p>
+                        </div>
+                        <div class="order-actions">
+                            ${htmlOpcoesStatus}
+                        </div>
+                        <div class="order-footer-id">
+                            <span class="order-id-display">ID: ${id.substring(0, 8)}...</span>
+                        </div>
+                    `;
+                    // Adiciona o cartão à coluna correta com base no status
+                    switch (statusExibicao) {
+                        case STATUS_PEDIDO.PENDENTE:
+                            pendingOrdersList.appendChild(cartaoPedido);
+                            contagens.PENDING++;
+                            break;
+                        case STATUS_PEDIDO.EM_PREPARACAO:
+                            processingOrdersList.appendChild(cartaoPedido);
+                            contagens.PROCESSING++;
+                            break;
+                        case STATUS_PEDIDO.CONCLUIDO:
+                            completedOrdersList.appendChild(cartaoPedido);
+                            contagens.COMPLETED++;
+                            break;
+                        case STATUS_PEDIDO.CANCELADO:
+                            cancelledOrdersList.appendChild(cartaoPedido);
+                            contagens.CANCELLED++;
+                            break;
+                        default:
+                            console.warn('Status desconhecido:', status);
+                    }
+                });
+
+                // Atualiza os contadores exibidos na UI
+                countPending.textContent = ` (${contagens.PENDING})`;
+                countProcessing.textContent = ` (${contagens.PROCESSING})`;
+                countCompleted.textContent = ` (${contagens.COMPLETED})`;
+                countCancelled.textContent = ` (${contagens.CANCELLED})`;
+            }
+        } else {
+            // Lida com erros na resposta da API (ex: 400 Bad Request, 500 Internal Server Error)
+            loadingMessage.style.display = 'none';
+            noOrdersMessage.textContent = `${MENSAGENS.ERRO_CARREGAR_PEDIDOS} ${resultado.detail || resultado.message || resposta.statusText}`;
+            noOrdersMessage.style.display = 'block';
+            console.error(MENSAGENS.ERRO_CARREGAR_PEDIDOS, resultado.detail || resultado.message || resposta.statusText);
+        }
+    } catch (error) {
+        // Lida com erros de rede ou outros erros que impedem a requisição
+        console.error('Erro na requisição de pedidos:', error);
+        loadingMessage.style.display = 'none';
+        noOrdersMessage.textContent = MENSAGENS.ERRO_CONEXAO_SERVIDOR;
+        noOrdersMessage.style.display = 'block';
+    }
+}
+
+/**
+ * Atualiza o texto e a classe do botão de filtro de data com base no estado atual.
+ */
+function updateFilterButtonState() {
+    if (isFilteredByToday) {
+        toggleFilterBtn.textContent = 'Ver Pedidos de Outros Dias';
+        toggleFilterBtn.classList.add('active'); // Adiciona classe para estilização de "ativo"
+    } else {
+        toggleFilterBtn.textContent = 'Ver Pedidos de Hoje';
+        toggleFilterBtn.classList.remove('active'); // Remove classe quando não está filtrado por hoje
+    }
+}
+
+// --- Lógica Principal: Executada quando o DOM está completamente carregado ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Referências para os contêineres de cada coluna
-    const pendingOrdersList = document.getElementById('pendingOrdersList');
-    const processingOrdersList = document.getElementById('processingOrdersList');
-    const completedOrdersList = document.getElementById('completedOrdersList');
-    const cancelledOrdersList = document.getElementById('cancelledOrdersList');
+    // --- Atribuição das Referências DOM ---
+    // Obtém as referências dos elementos HTML e as atribui às variáveis globais.
+    pendingOrdersList = document.getElementById('pendingOrdersList');
+    processingOrdersList = document.getElementById('processingOrdersList');
+    completedOrdersList = document.getElementById('completedOrdersList');
+    cancelledOrdersList = document.getElementById('cancelledOrdersList');
 
-    // Referências para os contadores de cada coluna
-    const countPending = document.getElementById('count-pending');
-    const countProcessing = document.getElementById('count-processing');
-    const countCompleted = document.getElementById('count-completed');
-    const countCancelled = document.getElementById('count-cancelled');
+    countPending = document.getElementById('count-pending');
+    countProcessing = document.getElementById('count-processing');
+    countCompleted = document.getElementById('count-completed');
+    countCancelled = document.getElementById('count-cancelled');
 
-    const loadingMessage = document.getElementById('loadingMessage');
-    const noOrdersMessage = document.getElementById('noOrdersMessage');
-    const logoutBtn = document.getElementById('logoutBtn');
+    loadingMessage = document.getElementById('loadingMessage');
+    noOrdersMessage = document.getElementById('noOrdersMessage');
+    logoutBtn = document.getElementById('logoutBtn');
+    toggleFilterBtn = document.getElementById('toggleFilterBtn'); // Atribui a referência do novo botão
 
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = obterTokenAcesso();
 
-    // --- Validação de Autenticação ---
+    // --- Validação de Autenticação na Inicialização ---
     if (!accessToken) {
-        alert('Você precisa estar logado para acessar esta página.');
-        window.location.href = '../index.html';
-        return;
+        alert(MENSAGENS.AUTENTICACAO_NECESSARIA);
+        redirecionarParaLogin();
+        return; // Interrompe a execução se não houver token
     }
 
     // --- Configuração da API_BASE_URL ---
+    // Garante que API_BASE_URL esteja definida (geralmente em um arquivo common.js incluído antes).
     if (typeof API_BASE_URL === 'undefined') {
-        console.error("API_BASE_URL não está definida. Verifique common.js ou seu escopo.");
-        alert("Erro de configuração: API_BASE_URL não encontrada.");
-        return;
+        console.error(MENSAGENS.ERRO_CONFIGURACAO_API.replace('API_BASE_URL não encontrada.', 'API_BASE_URL não está definida. Verifique common.js ou seu escopo.'));
+        alert(MENSAGENS.ERRO_CONFIGURACAO_API);
+        return; // Interrompe a execução se a URL base da API não estiver configurada
     }
 
-    // --- Logout ---
+    // --- Event Listener para o Botão de Logout ---
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('currentOrder');
-            window.location.href = '../index.html';
+        logoutBtn.addEventListener('click', (evento) => {
+            evento.preventDefault(); // Impede o comportamento padrão do link
+            removerDadosSessao();
+            redirecionarParaLogin();
         });
     }
 
-    // --- Tratamento de Erros de Autenticação/Autorização da API ---
-    function handleAuthError(response) {
-        if (response.status === 401 || response.status === 403) {
-            alert('Sessão expirada ou acesso negado. Faça login novamente.');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('currentOrder');
-            window.location.href = '../index.html';
-            return true;
-        }
-        return false;
+    // --- Event Listener para o Botão Único de Filtro de Data ---
+    if (toggleFilterBtn) {
+        toggleFilterBtn.addEventListener('click', () => {
+            isFilteredByToday = !isFilteredByToday; // Inverte o estado do filtro
+            updateFilterButtonState(); // Atualiza o texto e a classe do botão
+            carregarTodosPedidos(); // Recarrega os pedidos com o novo estado do filtro
+        });
     }
 
-    // --- Função para Carregar Pedidos (Requisição GET) ---
-    async function loadAllOrders() {
-        loadingMessage.style.display = 'block';
-        noOrdersMessage.style.display = 'none';
+    // --- Delegação de Eventos para Dropdown de Status e Botão de Atualização ---
+    // Ouve eventos 'change' e 'click' no elemento pai 'orders-board' para otimizar a performance.
+    const ordersBoard = document.querySelector('.orders-board');
 
-        // Limpa todas as colunas
-        pendingOrdersList.innerHTML = '';
-        processingOrdersList.innerHTML = '';
-        completedOrdersList.innerHTML = '';
-        cancelledOrdersList.innerHTML = '';
+    // Evento de mudança no dropdown de status
+    ordersBoard.addEventListener('change', (evento) => {
+        if (evento.target.classList.contains('status-select')) {
+            const elementoSelecao = evento.target;
+            const botaoAtualizar = elementoSelecao.nextElementSibling; // O botão 'Atualizar' é o próximo irmão
 
-        // Reseta contadores
-        let counts = { PENDING: 0, PROCESSING: 0, COMPLETED: 0, CANCELLED: 0 };
+            const valorSelecionado = elementoSelecao.value;
+            // Pega o status atual que está na opção disabled (selecionada por padrão)
+            const statusAtualReal = elementoSelecao.querySelector('option[selected][disabled]').value;
 
-        try {
-            const queryParams = new URLSearchParams();
-            // Solicita pedidos de TODOS os status que você quer exibir nas colunas
-            queryParams.append('status', 'PENDING');
-            queryParams.append('status', 'PROCESSING');
-            queryParams.append('status', 'COMPLETED');
-            queryParams.append('status', 'CANCELLED');
-
-            const response = await fetch(`${API_BASE_URL}/api/v1/orders/?${queryParams.toString()}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'accept': 'application/json'
-                }
-            });
-
-            if (handleAuthError(response)) {
-                loadingMessage.style.display = 'none';
-                return;
-            }
-
-            const result = await response.json();
-
-            if (response.ok) {
-                const orders = result.orders;
-                loadingMessage.style.display = 'none';
-
-                if (!orders || orders.length === 0) {
-                    noOrdersMessage.style.display = 'block';
-                } else {
-                    // Distribui os pedidos nas colunas corretas
-                    orders.forEach(order => {
-                        const orderCard = document.createElement('div');
-                        const displayStatus = order.status.toUpperCase();
-                        orderCard.classList.add('order-card', displayStatus.toLowerCase());
-
-                        const itemsHtml = order.items && order.items.length > 0
-                            ? order.items.map(item => `
-                                <li>
-                                    ${item.product_name || `(ID: ${item.product_id})`} 
-                                    <span class="item-quantity">x${item.quantity}</span> 
-                                    <span class="item-price">R$ ${item.price ? item.price.toFixed(2) : '0.00'}</span>
-                                </li>`
-                            ).join('')
-                            : '<li>Nenhum item detalhado disponível.</li>';
-
-                        // --- Geração do Dropdown de Status ---
-                        let statusOptionsHtml = '';
-                        const allStatuses = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED'];
-
-                        const statusTransitions = {
-                            PENDING:      ['CANCELLED'],
-                            PROCESSING:   ['CANCELLED'],
-                            COMPLETED:    ['CANCELLED'], // Exemplo: permite cancelar um pedido já concluído
-                            CANCELLED:    ['PENDING']    // Exemplo: permite reabrir um pedido cancelado
-                        };
-
-                        let allowedNextStatuses = statusTransitions[displayStatus] || [];
-
-
-                        // Inclui o status atual como selecionado e desabilitado
-                        // e adiciona os status permitidos como opções selecionáveis.
-                        statusOptionsHtml = `
-                            <select class="status-select" data-order-id="${order.id}">
-                                <option value="${displayStatus}" selected disabled>${displayStatus}</option>
-                                ${allowedNextStatuses.map(status => {
-                            if (status !== displayStatus) { // Evita duplicar o status atual como opção selecionável
-                                return `<option value="${status}">${status}</option>`;
-                            }
-                            return '';
-                        }).join('')}
-                            </select>
-                            <button class="update-status-btn btn-primary" data-order-id="${order.id}" disabled>Atualizar</button>
-                        `;
-
-                        /// NOVO: Formata a data de criação para exibição
-                        const createdAtDate = new Date(order.created_at);
-
-                        // Opção 1: Formata para o fuso horário local do usuário
-                        // Adicionando timeZone: 'America/Sao_Paulo' ou 'America/Araguaina'
-                        // (Florianópolis está na zona de São Paulo/Brasília)
-                        const formattedCreatedAt = createdAtDate.toLocaleString('pt-BR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            // Adiciona a opção de fuso horário. 'America/Sao_Paulo' cobre a região de Brasília/Florianópolis.
-                            timeZone: 'America/Sao_Paulo'
-                        });
-
-                        orderCard.innerHTML = `
-                        <div class="order-header">
-                            <h3>Pedido: ${order.locator || 'N/A'}</h3>
-                        </div>
-                        <p class="order-status-display">Status: <span class="status-badge ${displayStatus.toLowerCase()}">${displayStatus}</span></p>
-                        <div class="order-details">
-                            <h4>Itens:</h4>
-                            <ul class="order-items-list">${itemsHtml}</ul>
-                            <p class="order-notes">Obs: ${order.notes || 'N/A'}</p>
-                            <p class="order-total">Total: <strong>R$ ${order.total ? order.total.toFixed(2) : '0.00'}</strong></p>
-                            <p class="order-created-at">Criado em: ${(() => {
-                                let createdAtDate = new Date(order.created_at);
-
-                                // Verifica se a string de data termina com 'Z' ou um offset.
-                                // Se não, é provável que seja interpretada como local.
-                                // Para forçar a correção de 3 horas (de 23:30 para 20:30, por exemplo)
-                                // Se a data já está sendo interpretada como local (ex: 23:30 local)
-                                // e você quer 20:30 local, subtraia 3 horas.
-                                // Se a data veio como 23:30 UTC e o navegador está exibindo como 23:30 local,
-                                // então ela deveria ser 20:30 local.
-
-                                // Subtrai 3 horas (3 * 60 minutos * 60 segundos * 1000 milissegundos)
-                                // Isso moverá o tempo para trás em 3 horas.
-                                createdAtDate.setTime(createdAtDate.getTime() - (3 * 60 * 60 * 1000));
-
-                                return createdAtDate.toLocaleString('pt-BR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    // Removendo o timeZone explícito aqui para ver o efeito da subtração manual.
-                                    // Se ainda estiver errado, podemos reintroduzir o timeZone depois.
-                                });
-                            })()}</p>
-                        </div>
-                        <div class="order-actions">
-                            ${statusOptionsHtml}
-                        </div>
-                        <div class="order-footer-id">
-                            <span class="order-id-display">ID: ${order.id}</span>
-                        </div>
-                    `;
-                        // Adiciona o card à coluna correta
-                        switch (displayStatus) {
-                            case 'PENDING':
-                                pendingOrdersList.appendChild(orderCard);
-                                counts.PENDING++;
-                                break;
-                            case 'PROCESSING':
-                                processingOrdersList.appendChild(orderCard);
-                                counts.PROCESSING++;
-                                break;
-                            case 'COMPLETED':
-                                completedOrdersList.appendChild(orderCard);
-                                counts.COMPLETED++;
-                                break;
-                            case 'CANCELLED':
-                                cancelledOrdersList.appendChild(orderCard);
-                                counts.CANCELLED++;
-                                break;
-                            default:
-                                console.warn('Status desconhecido:', order.status);
-                        }
-                    });
-
-                    // Atualiza os contadores
-                    countPending.textContent = ` (${counts.PENDING})`;
-                    countProcessing.textContent = ` (${counts.PROCESSING})`;
-                    countCompleted.textContent = ` (${counts.COMPLETED})`;
-                    countCancelled.textContent = ` (${counts.CANCELLED})`;
-                }
-            } else {
-                loadingMessage.style.display = 'none';
-                noOrdersMessage.textContent = `Erro ao carregar pedidos: ${result.detail || result.message || response.statusText}`;
-                noOrdersMessage.style.display = 'block';
-                console.error('Erro ao carregar pedidos:', result.detail || result.message || response.statusText);
-            }
-        } catch (error) {
-            console.error('Erro na requisição de pedidos:', error);
-            loadingMessage.style.display = 'none';
-            noOrdersMessage.textContent = 'Não foi possível conectar ao servidor.';
-            noOrdersMessage.style.display = 'block';
-        }
-    }
-
-    // --- Event Listener para mudança no dropdown e clique no botão 'Atualizar' ---
-    // Os listeners são anexados ao elemento pai 'orders-board' para delegar eventos
-    const ordersBoard = document.querySelector('.orders-board'); // Obtenha o contêiner principal
-
-    ordersBoard.addEventListener('change', (event) => {
-        if (event.target.classList.contains('status-select')) {
-            const selectElement = event.target;
-            const updateButton = selectElement.nextElementSibling; // O botão "Atualizar" é o próximo irmão
-
-            // O valor da opção selecionada (que pode ser o status atual disabled)
-            const selectedValue = selectElement.value;
-            // O status atual real do card (armazenado na primeira opção desabilitada)
-            const currentActualStatus = selectElement.querySelector('option[selected][disabled]').value;
-
-            if (selectedValue !== currentActualStatus) {
-                updateButton.disabled = false; // Habilita o botão se a seleção mudou
-            } else {
-                updateButton.disabled = true; // Desabilita se voltar ao status original
-            }
+            // Habilita ou desabilita o botão 'Atualizar' se a seleção do dropdown mudou ou não
+            botaoAtualizar.disabled = (valorSelecionado === statusAtualReal);
         }
     });
 
-    ordersBoard.addEventListener('click', async (event) => {
-        if (event.target.classList.contains('update-status-btn')) {
-            const button = event.target;
-            const orderId = button.dataset.orderId;
-            const selectElement = button.previousElementSibling;
-            const newStatus = selectElement.value; // Pega o novo status do dropdown
+    // Evento de clique no botão 'Atualizar' status
+    ordersBoard.addEventListener('click', async (evento) => {
+        if (evento.target.classList.contains('update-status-btn')) {
+            const botao = evento.target;
+            const idPedido = botao.dataset.orderId; // ID do pedido do atributo data-order-id
+            const elementoSelecao = botao.previousElementSibling;
+            const novoStatus = elementoSelecao.value;
 
-            const confirmUpdate = confirm(`Deseja realmente mudar o status do pedido #${orderId.substring(0, 12)} para "${newStatus}"?`);
-            if (!confirmUpdate) {
-                return;
+            // Solicita confirmação antes de atualizar o status
+            const confirmarAtualizacao = confirm(MENSAGENS.CONFIRMACAO_ATUALIZACAO(idPedido.substring(0, 12), novoStatus));
+            if (!confirmarAtualizacao) {
+                return; // Aborta se o usuário cancelar
             }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/v1/orders/${orderId}`, {
-                    method: 'PATCH',
+                const resposta = await fetch(`${API_BASE_URL}/api/v1/orders/${idPedido}`, {
+                    method: 'PATCH', // Método HTTP para atualizar parcialmente um recurso
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                        'accept': 'application/json'
+                        'Content-Type': 'application/json', // Informa que o corpo da requisição é JSON
+                        'Accept': 'application/json' // Informa que esperamos uma resposta JSON
                     },
-                    body: JSON.stringify({ status: newStatus }),
+                    body: JSON.stringify({ status: novoStatus }), // Envia o novo status no corpo da requisição
                 });
 
-                if (handleAuthError(response)) return;
+                if (lidarComErroAutenticacao(resposta)) return; // Lida com erros de autenticação/autorização
 
-                const result = await response.json();
+                const resultado = await resposta.json();
 
-                if (response.ok) {
-                    //alert(`Status do Pedido #${orderId.substring(0, 12)} atualizado para "${newStatus}".`);
-                    loadAllOrders(); // Recarrega TODOS os pedidos para que sejam redistribuídos corretamente
+                if (resposta.ok) {
+                    // Se a atualização foi bem-sucedida, recarrega todos os pedidos
+                    // para refletir as mudanças na UI (o pedido mudará de coluna).
+                    carregarTodosPedidos();
                 } else {
-                    alert(result.detail || result.message || 'Erro ao atualizar status do pedido. Verifique as transições permitidas no backend.');
-                    console.error('Erro ao atualizar status:', result);
+                    // Exibe mensagem de erro detalhada da API ou uma mensagem padrão
+                    alert(resultado.detail || resultado.message || MENSAGENS.ERRO_ATUALIZAR_STATUS);
+                    console.error('Erro ao atualizar status:', resultado);
                 }
             } catch (error) {
+                // Lida com erros de rede durante a atualização do status
                 console.error('Erro na requisição de atualização de status:', error);
-                alert('Não foi possível conectar ao servidor para atualizar o status.');
+                alert(MENSAGENS.ERRO_CONEXAO_SERVIDOR);
             }
         }
     });
 
-    // --- Carrega pedidos ao iniciar a página ---
-    loadAllOrders();
+    // --- Carrega Pedidos na Inicialização ---
+    // Inicia a aplicação carregando os pedidos filtrados por hoje (isFilteredByToday = true por padrão).
+    updateFilterButtonState(); // Atualiza o texto do botão para "Ver Todos os Pedidos"
+    carregarTodosPedidos();
 });

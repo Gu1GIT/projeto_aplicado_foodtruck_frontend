@@ -18,7 +18,8 @@ const MENSAGENS = {
     ERRO_CARREGAR_PEDIDOS: 'Erro ao carregar pedidos:',
     ERRO_CONEXAO_SERVIDOR: 'Não foi possível conectar ao servidor.',
     CONFIRMACAO_ATUALIZACAO: (id, novoStatus) => `Deseja realmente mudar o status do pedido #${id} para "${novoStatus}"?`,
-    ERRO_ATUALIZAR_STATUS: 'Erro ao atualizar status do pedido. Verifique as transições permitidas no backend.'
+    ERRO_ATUALIZAR_STATUS: 'Erro ao atualizar status do pedido. Verifique as transições permitidas no backend.',
+    ERRO_CARREGAR_PRODUTOS: 'Erro ao carregar produtos:'
 };
 
 const URLS = {
@@ -27,6 +28,7 @@ const URLS = {
 
 // --- Variáveis de Estado Global ---
 let isFilteredByToday = true; // Começamos com os pedidos de hoje filtrados por padrão
+let productsCache = new Map(); // Cache para armazenar ID do produto -> Nome do produto
 
 // --- Referências Globais para os Elementos DOM ---
 // Declaradas aqui para serem acessíveis por todas as funções após o DOM ser carregado.
@@ -102,21 +104,63 @@ const formatarDataCriacao = (dataString) => {
 
 /**
  * Gera o HTML para a lista de itens de um pedido.
+ * Usa o productsCache para obter o nome do produto.
  * @param {Array<Object>} itensPedido - Um array de objetos de item de pedido.
  * @returns {string} O HTML formatado da lista de itens.
  */
 const gerarHtmlItensPedido = (itensPedido) => {
+    console.log('Itens do pedido:', itensPedido); // Adicionado para depuração
+
     if (!itensPedido || itensPedido.length === 0) {
         return '<li>Nenhum item detalhado disponível.</li>';
     }
-    return itensPedido.map(item => `
-        <li>
-            ${item.product_name || `(ID: ${item.product_id})`}
-            <span class="item-quantity">x${item.quantity}</span>
-            <span class="item-price">R$ ${item.price ? item.price.toFixed(2) : '0.00'}</span>
-        </li>`
-    ).join('');
+    return itensPedido.map(item => {
+        // Tenta obter o nome do produto do cache, fallback para o ID se não encontrado
+        const productName = productsCache.get(item.product_id) || `(ID: ${item.product_id})`;
+        return `
+            <li>
+                ${productName}
+                <span class="item-quantity">x${item.quantity}</span>
+                <span class="item-price">R$ ${item.price ? item.price.toFixed(2) : '0.00'}</span>
+            </li>`;
+    }).join('');
 };
+
+/**
+ * Carrega todos os produtos da API e preenche o productsCache.
+ */
+async function carregarProdutos() {
+    try {
+        const resposta = await fetch(`${API_BASE_URL}/api/v1/products/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${obterTokenAcesso()}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (lidarComErroAutenticacao(resposta)) {
+            return;
+        }
+
+        const resultado = await resposta.json();
+
+        if (resposta.ok && resultado.products) {
+            productsCache.clear(); // Limpa o cache antes de preencher
+            resultado.products.forEach(product => {
+                productsCache.set(product.id, product.name);
+            });
+            console.log('Cache de produtos preenchido:', productsCache);
+        } else {
+            console.error(MENSAGENS.ERRO_CARREGAR_PRODUTOS, resultado.detail || resultado.message || resposta.statusText);
+            alert(`${MENSAGENS.ERRO_CARREGAR_PRODUTOS} ${resultado.detail || resultado.message || resposta.statusText}`);
+        }
+    } catch (error) {
+        console.error('Erro na requisição de produtos:', error);
+        alert(MENSAGENS.ERRO_CONEXAO_SERVIDOR);
+    }
+}
+
 
 // --- Função para Carregar Pedidos (Requisição GET) ---
 /**
@@ -181,8 +225,8 @@ async function carregarTodosPedidos() {
                     const dataPedidoFlorianopolis = new Date(dataPedido.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
 
                     return dataPedidoFlorianopolis.getDate() === diaAtual &&
-                           dataPedidoFlorianopolis.getMonth() === mesAtual &&
-                           dataPedidoFlorianopolis.getFullYear() === anoAtual;
+                               dataPedidoFlorianopolis.getMonth() === mesAtual &&
+                               dataPedidoFlorianopolis.getFullYear() === anoAtual;
                 });
             }
 
@@ -331,6 +375,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert(MENSAGENS.ERRO_CONFIGURACAO_API);
         return; // Interrompe a execução se a URL base da API não estiver configurada
     }
+
+    // --- Primeiro, carregue os produtos, depois os pedidos ---
+    await carregarProdutos(); // Garante que o cache de produtos esteja preenchido
 
     // --- Event Listener para o Botão de Logout ---
     if (logoutBtn) {

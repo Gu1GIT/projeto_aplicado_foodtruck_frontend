@@ -260,13 +260,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Lógica de cálculo de tempo ---
     function calculateEstimatedTime(pendingOrProcessingOrders) {
         if (pendingOrProcessingOrders === 0) {
-            return 12; // Se não há pedidos na fila, o primeiro leva 12 min
+            return 8; // Se não há pedidos na fila, o primeiro leva 8 min
         }
         // Calcula o tempo base para os pedidos existentes na fila
-        const baseBlocks = Math.ceil(pendingOrProcessingOrders / 2);
-        const baseTime = baseBlocks * 12;
-        // Adiciona 12 minutos para o "próximo" pedido (o que será feito agora)
-        return baseTime + 12;
+        const baseBlocks = Math.floor((pendingOrProcessingOrders + 1) / 2); // +1 para o pedido atual
+        const baseTime = baseBlocks * 8; // Cada bloco leva 8 minutos        
+        return baseTime;
     }
 
     // --- Função para exibir a estimativa de tempo ---

@@ -235,13 +235,15 @@ async function carregarTodosPedidos() {
             } else {
                 // Itera sobre os pedidos e os distribui nas colunas
                 pedidos.forEach(pedido => {
-                    const { id, locator, status, items, notes, total, created_at } = pedido;
+                    // AQUI ESTÁ A MUDANÇA: 'products' em vez de 'items'
+                    const { id, locator, status, products, notes, total, created_at } = pedido; 
                     const statusExibicao = status.toUpperCase();
 
                     const cartaoPedido = document.createElement('div');
                     cartaoPedido.classList.add('order-card', statusExibicao.toLowerCase());
 
-                    const htmlItens = gerarHtmlItensPedido(items);
+                    // Agora passamos 'products' para a função gerarHtmlItensPedido
+                    const htmlItens = gerarHtmlItensPedido(products); 
 
                     // --- Regras de Transição de Status ---
                     const transicoesStatus = {
@@ -326,7 +328,6 @@ async function carregarTodosPedidos() {
         noOrdersMessage.style.display = 'block';
     }
 }
-
 /**
  * Atualiza o texto e a classe do botão de filtro de data com base no estado atual.
  */

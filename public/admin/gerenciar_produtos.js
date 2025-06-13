@@ -1,346 +1,356 @@
 // public/admin/gerenciar_produtos.js
 // Lógica para operações CRUD de produtos.
 
-console.log('>>> gerenciar_produtos.js está sendo carregado!'); // Log de depuração
-
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('>>> DOMContentLoaded disparado no gerenciar_produtos.js!'); // Log de depuração
+    // --- Configurações e Referências ---
+    const API_BASE_URL = window.API_BASE_URL ; 
+    
+    const ELEMENTS = {
+        logoutBtn: document.getElementById('logoutBtn'),
+        productsList: document.getElementById('productsList'),
+        productsPaginationInfo: document.getElementById('productsPaginationInfo'),
+        fetchProductsBtn: document.getElementById('fetchProductsBtn'),
+        offsetInput: document.getElementById('offset'),
+        limitInput: document.getElementById('limit'),
 
-    // --- Referências aos elementos HTML ---
-    const logoutBtn = document.getElementById('logoutBtn');
-    const productsList = document.getElementById('productsList');
-    const productsPaginationInfo = document.getElementById('productsPaginationInfo');
-    const fetchProductsBtn = document.getElementById('fetchProductsBtn');
-    const offsetInput = document.getElementById('offset');
-    const limitInput = document.getElementById('limit');
+        createProductForm: document.getElementById('createProductForm'),
+        createProductMessage: document.getElementById('createProductMessage'),
+        createName: document.getElementById('createName'),
+        createDescription: document.getElementById('createDescription'),
+        createPrice: document.getElementById('createPrice'),
+        createCategory: document.getElementById('createCategory'),
 
-    const createProductForm = document.getElementById('createProductForm');
-    const createProductMessage = document.getElementById('createProductMessage');
+        getProductIdInput: document.getElementById('getProductId'),
+        getProductBtn: document.getElementById('getProductBtn'),
+        updateProductForm: document.getElementById('updateProductForm'),
+        currentProductIdSpan: document.getElementById('currentProductId'),
+        productDetailMessage: document.getElementById('productDetailMessage'),
+        updateName: document.getElementById('updateName'),
+        updateDescription: document.getElementById('updateDescription'),
+        updatePrice: document.getElementById('updatePrice'),
+        updateCategory: document.getElementById('updateCategory'),
+        submitPatchButton: document.getElementById('submitPatchButton'),
+        deleteProductBtn: document.getElementById('deleteProductBtn'),
+    };
 
-    const getProductIdInput = document.getElementById('getProductId');
-    const getProductBtn = document.getElementById('getProductBtn');
-    const updateProductForm = document.getElementById('updateProductForm');
-    const currentProductIdSpan = document.getElementById('currentProductId');
-    const productDetailMessage = document.getElementById('productDetailMessage');
-    const submitPatchButton = document.getElementById('submitPatchButton');
-    const deleteProductBtn = document.getElementById('deleteProductBtn');
+    const MESSAGES = {
+        authRequired: 'Você precisa estar logado para acessar esta página.',
+        sessionExpired: 'Sessão expirada ou acesso negado. Faça login novamente.',
+        loadingProducts: 'Carregando produtos...',
+        noProductsFound: 'Nenhum produto encontrado.',
+        errorFetchingProducts: 'Erro ao carregar produtos.',
+        serverConnectionError: 'Não foi possível conectar ao servidor.',
+        nameRequired: 'O Nome do produto é obrigatório.',
+        priceInvalid: 'O Preço deve ser um número válido maior que zero.',
+        productCreatedSuccess: (name, id) => `Produto '${name}' (ID: ${id}) criado com sucesso!`,
+        productCreatedSuccessNoId: 'Produto criado com sucesso! (ID não disponível na resposta da API)',
+        errorCreatingProduct: 'Erro ao criar produto.',
+        idRequired: 'Por favor, insira um ID de produto.',
+        productLoadedForEdit: (id) => `Produto ID ${id} carregado para edição.`,
+        productNotFound: (id) => `Produto ID ${id} não encontrado.`,
+        errorFetchingProduct: 'Erro ao buscar produto.',
+        noFieldsToPatch: 'Nenhum campo para atualização parcial foi modificado.',
+        productUpdatedSuccess: (id) => `Produto ID ${id} atualizado com sucesso!`,
+        errorUpdatingProduct: 'Erro ao atualizar produto.',
+        noProductSelected: 'Nenhum produto selecionado para ',
+        confirmDelete: (id) => `Tem certeza que deseja deletar o produto ID ${id}?`,
+        productDeletedSuccess: (id) => `Produto ID ${id} deletado com sucesso!`,
+        errorDeletingProduct: 'Erro ao deletar produto.',
+    };
 
     let currentEditProductId = null; // Para rastrear qual produto está sendo editado
-
-    // --- OBTENÇÃO DO TOKEN DE ACESSO ---
     const accessToken = localStorage.getItem('accessToken');
 
+    // --- Validação de Autenticação Inicial ---
     if (!accessToken) {
-        alert('Você precisa estar logado para acessar esta página.');
+        alert(MESSAGES.authRequired);
         window.location.href = '../index.html'; // Redirecionar para a página de login
         return; // Impede que o restante do script seja executado sem o token
     }
 
-    // --- Lógica de Logout ---
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            localStorage.removeItem('accessToken'); // Limpa o token
-            window.location.href = '../index.html'; // Redireciona para o login
-        });
-    }
+    // --- Funções Auxiliares ---
 
-    // --- Função auxiliar para lidar com respostas da API (401/403 - Autenticação/Autorização) ---
-    function handleAuthError(response) {
-        if (response.status === 401 || response.status === 403) {
-            alert('Sessão expirada ou acesso negado. Faça login novamente.');
-            localStorage.removeItem('accessToken'); // Limpa o token expirado/inválido
-            window.location.href = '../index.html';
-            return true; // Indica que o erro de autenticação foi tratado
+    /**
+     * Exibe uma mensagem em um elemento HTML especificado.
+     * @param {HTMLElement} element - O elemento HTML onde a mensagem será exibida.
+     * @param {string} message - O texto da mensagem.
+     * @param {string} type - O tipo da mensagem ('success', 'error', 'warning').
+     */
+    function displayMessage(element, message, type) {
+        element.innerText = message;
+        switch (type) {
+            case 'success':
+                element.style.color = 'green';
+                break;
+            case 'error':
+                element.style.color = 'red';
+                break;
+            case 'warning':
+                element.style.color = 'orange';
+                break;
+            default:
+                element.style.color = 'black'; // Cor padrão
         }
-        return false; // Indica que não foi um erro de autenticação/autorização
     }
 
-    // --- GET /api/v1/products/ (Fetch Products) ---
-    async function fetchProducts() {
-        productsList.innerHTML = '<li>Carregando produtos...</li>';
-        productsPaginationInfo.innerText = '';
-        const offset = offsetInput.value;
-        const limit = limitInput.value;
+    /**
+     * Limpa os campos de um formulário.
+     * @param {HTMLFormElement} form - O formulário a ser limpo.
+     */
+    function clearForm(form) {
+        form.reset();
+    }
 
+    /**
+     * Função genérica para fazer requisições à API.
+     * Lida com autenticação e tratamento de erros comuns.
+     * @param {string} url - A URL do endpoint da API.
+     * @param {object} options - Opções para a requisição fetch.
+     * @returns {Promise<object|null>} Os dados da resposta JSON ou null em caso de erro.
+     */
+    async function fetchData(url, options) {
         try {
-            const queryParams = new URLSearchParams({ offset, limit });
-            const response = await fetch(`${API_BASE_URL}/api/v1/products/?${queryParams.toString()}`, {
-                method: 'GET',
+            const response = await fetch(url, {
+                ...options,
                 headers: {
+                    ...options.headers,
                     'Authorization': `Bearer ${accessToken}`,
                     'accept': 'application/json'
-                }
+                },
             });
 
-            if (handleAuthError(response)) return;
+            if (response.status === 401 || response.status === 403) {
+                displayMessage(ELEMENTS.productDetailMessage, MESSAGES.sessionExpired, 'error'); // Usar um elemento mais genérico para esta mensagem
+                localStorage.removeItem('accessToken');
+                window.location.href = '../index.html';
+                return null; // Indica que o erro de autenticação foi tratado
+            }
 
             const data = await response.json();
 
-            if (response.ok) {
-                productsList.innerHTML = '';
-                // Acessa 'data.products' para a listagem (conforme o formato JSON fornecido)
-                const items = data.products; 
-
-                if (!items || items.length === 0) {
-                    productsList.innerHTML = '<li>Nenhum produto encontrado.</li>';
-                } else {
-                    items.forEach(item => {
-                        const listItem = document.createElement('li');
-                        listItem.innerHTML = `
-                            <strong>ID:</strong> ${item.id}<br>
-                            <strong>Nome:</strong> ${item.name}<br>
-                            <strong>Preço:</strong> R$ ${item.price ? item.price.toFixed(2) : 'N/A'}<br>
-                            <strong>Categoria:</strong> ${item.category || 'N/A'}<br>
-                         
-                        `;
-                        // Adiciona o clique para preencher o campo de busca
-                    listItem.style.cursor = 'pointer';
-                    listItem.title = 'Clique para carregar este produto';
-                    listItem.addEventListener('click', () => {
-                        getProductIdInput.value = item.id;
-                        getProductBtn.click();
-                    });
-                        productsList.appendChild(listItem);
-                    });
-                    const pagination = data.pagination;
-                    productsPaginationInfo.innerText = `Página: ${pagination.page} de ${pagination.total_pages} (Total: ${pagination.total_count} produtos)`;
-                }
-            } else {
-                productsList.innerHTML = '<li>Erro ao carregar produtos.</li>';
-                console.error('Erro ao carregar produtos:', data.detail || data.message || response.statusText);
+            if (!response.ok) {
+                const errorMessage = data.detail || data.message || response.statusText;
+                console.error(`Erro na requisição para ${url}:`, errorMessage, data);
+                throw new Error(errorMessage); // Lança um erro para ser pego pelo catch externo
             }
+            return data;
         } catch (error) {
-            console.error('Erro na requisição de produtos:', error);
-            productsList.innerHTML = '<li>Não foi possível conectar ao servidor.</li>';
+            console.error('Erro na requisição:', error);
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.serverConnectionError, 'error');
+            return null;
         }
     }
 
-    // --- Chamadas Iniciais e Event Listeners ---
-    fetchProductsBtn.addEventListener('click', fetchProducts);
-    fetchProducts();
+    // --- Lógica de Logout ---
+    if (ELEMENTS.logoutBtn) {
+        ELEMENTS.logoutBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            localStorage.removeItem('accessToken');
+            window.location.href = '../index.html';
+        });
+    }
 
-    // --- POST /api/v1/products/ (Create Product) ---
-    createProductForm.addEventListener('submit', async (event) => {
+    // --- Operações CRUD de Produtos ---
+
+    // GET /api/v1/products/ (Fetch Products)
+    async function fetchProducts() {
+        ELEMENTS.productsList.innerHTML = `<li>${MESSAGES.loadingProducts}</li>`;
+        ELEMENTS.productsPaginationInfo.innerText = '';
+
+        const offset = ELEMENTS.offsetInput.value;
+        const limit = ELEMENTS.limitInput.value;
+        const queryParams = new URLSearchParams({ offset, limit });
+
+        const data = await fetchData(`${API_BASE_URL}/api/v1/products/?${queryParams.toString()}`, {
+            method: 'GET',
+        });
+
+        if (data) {
+            ELEMENTS.productsList.innerHTML = '';
+            const items = data.products;
+
+            if (!items || items.length === 0) {
+                ELEMENTS.productsList.innerHTML = `<li>${MESSAGES.noProductsFound}</li>`;
+            } else {
+                items.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        <strong>ID:</strong> ${item.id}<br>
+                        <strong>Nome:</strong> ${item.name}<br>
+                        <strong>Preço:</strong> R$ ${item.price ? item.price.toFixed(2) : 'N/A'}<br>
+                        <strong>Categoria:</strong> ${item.category || 'N/A'}<br>
+                    `;
+                    listItem.style.cursor = 'pointer';
+                    listItem.title = 'Clique para carregar este produto';
+                    listItem.addEventListener('click', () => {
+                        ELEMENTS.getProductIdInput.value = item.id;
+                        ELEMENTS.getProductBtn.click();
+                    });
+                    ELEMENTS.productsList.appendChild(listItem);
+                });
+                const pagination = data.pagination;
+                ELEMENTS.productsPaginationInfo.innerText = `Página: ${pagination.page} de ${pagination.total_pages} (Total: ${pagination.total_count} produtos)`;
+            }
+        } else {
+            ELEMENTS.productsList.innerHTML = `<li>${MESSAGES.errorFetchingProducts}</li>`;
+        }
+    }
+
+    // POST /api/v1/products/ (Create Product)
+    async function createProduct(event) {
         event.preventDefault();
-        createProductMessage.innerText = ''; // Limpa mensagens anteriores
+        displayMessage(ELEMENTS.createProductMessage, '', 'default'); // Limpa mensagens anteriores
 
-        // Coleta os dados dos campos do formulário de criação
-        const newProduct = { // <-- newProduct já contém o nome digitado!
-            name: document.getElementById('createName').value,
-            description: document.getElementById('createDescription').value,
-            price: parseFloat(document.getElementById('createPrice').value),
-            category: document.getElementById('createCategory').value,
+        const newProduct = {
+            name: ELEMENTS.createName.value,
+            description: ELEMENTS.createDescription.value,
+            price: parseFloat(ELEMENTS.createPrice.value),
+            category: ELEMENTS.createCategory.value,
         };
 
         // Validação básica no frontend
         if (!newProduct.name || newProduct.name.trim() === '') {
-            createProductMessage.style.color = 'red';
-            createProductMessage.innerText = 'O Nome do produto é obrigatório.';
+            displayMessage(ELEMENTS.createProductMessage, MESSAGES.nameRequired, 'error');
             return;
         }
         if (isNaN(newProduct.price) || newProduct.price <= 0) {
-            createProductMessage.style.color = 'red';
-            createProductMessage.innerText = 'O Preço deve ser um número válido maior que zero.';
+            displayMessage(ELEMENTS.createProductMessage, MESSAGES.priceInvalid, 'error');
             return;
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/products/`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(newProduct)
-            });
+        const data = await fetchData(`${API_BASE_URL}/api/v1/products/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newProduct)
+        });
 
-            if (handleAuthError(response)) return;
-
-            const data = await response.json(); // Data agora é {id: ..., action: ...}
-
-            if (response.ok) { // Se a requisição foi bem-sucedida (status 2xx, ex: 201 Created)
-                createProductMessage.style.color = 'green';
-                
-                // --- DEBUG LOGS ---
-                console.log('Dados completos da resposta da API (POST create):', data); 
-                console.log('ID do produto retornado pela API:', data.id);
-                // --- FIM DEBUG LOGS ---
-
-                // *** CORREÇÃO AQUI: Usar newProduct.name (do formulário) e data.id (da resposta da API) ***
-                if (data.id) { // Verifica se o ID foi retornado
-                    // Usa o nome que foi digitado no formulário, já que a API não o retorna
-                    createProductMessage.innerText = `Produto '${newProduct.name}' (ID: ${data.id}) criado com sucesso!`;
-                } else {
-                    // Fallback caso nem o ID seja retornado (cenário improvável se o `response.ok` é true)
-                    createProductMessage.innerText = `Produto criado com sucesso! (ID não disponível na resposta da API)`;
-                    console.warn('Resposta da API de criação de produto não contém o ID esperado:', data);
-                }
-                
-                createProductForm.reset(); // Limpa o formulário após sucesso
-                fetchProducts(); // Recarrega a lista de produtos para exibir o recém-criado
-            } else { // Se houve um erro na resposta (status 4xx ou 5xx)
-                createProductMessage.style.color = 'red';
-                createProductMessage.innerText = data.detail || data.message || `Erro ao criar produto: ${response.statusText}`;
-                console.error('Erro ao criar produto:', data);
+        if (data) {
+            if (data.id) {
+                displayMessage(ELEMENTS.createProductMessage, MESSAGES.productCreatedSuccess(newProduct.name, data.id), 'success');
+            } else {
+                displayMessage(ELEMENTS.createProductMessage, MESSAGES.productCreatedSuccessNoId, 'warning');
             }
-        } catch (error) { // Erros de rede ou outros erros na requisição
-            console.error('Erro na requisição de criação de produto:', error);
-            createProductMessage.style.color = 'red';
-            createProductMessage.innerText = 'Não foi possível conectar ao servidor para criar o produto.';
+            clearForm(ELEMENTS.createProductForm);
+            fetchProducts(); // Recarrega a lista
+        } else {
+            displayMessage(ELEMENTS.createProductMessage, MESSAGES.errorCreatingProduct, 'error');
         }
-    });
+    }
 
-    // --- GET /api/v1/products/{product_id} (Get Product By Id) ---
-    getProductBtn.addEventListener('click', async () => {
-        const productId = getProductIdInput.value.trim();
-        productDetailMessage.innerText = '';
-        updateProductForm.style.display = 'none'; // Esconde o formulário de edição
+    // GET /api/v1/products/{product_id} (Get Product By Id)
+    async function getProductById() {
+        const productId = ELEMENTS.getProductIdInput.value.trim();
+        displayMessage(ELEMENTS.productDetailMessage, '', 'default');
+        ELEMENTS.updateProductForm.style.display = 'none';
 
         if (!productId) {
-            productDetailMessage.style.color = 'red';
-            productDetailMessage.innerText = 'Por favor, insira um ID de produto.';
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.idRequired, 'error');
             return;
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'accept': 'application/json'
-                }
-            });
+        const data = await fetchData(`${API_BASE_URL}/api/v1/products/${productId}`, {
+            method: 'GET',
+        });
 
-            if (handleAuthError(response)) return;
+        if (data) {
+            currentEditProductId = productId;
+            ELEMENTS.currentProductIdSpan.innerText = productId;
 
-            const data = await response.json();
+            ELEMENTS.updateName.value = data.name || '';
+            ELEMENTS.updateDescription.value = data.description || '';
+            ELEMENTS.updatePrice.value = data.price || '';
+            ELEMENTS.updateCategory.value = data.category || '';
 
-            if (response.ok) {
-                currentEditProductId = productId; // Armazena o ID do produto que está sendo editado
-                currentProductIdSpan.innerText = productId;
-
-                // Preenche o formulário de atualização com os dados do produto
-                document.getElementById('updateName').value = data.name || '';
-                document.getElementById('updateDescription').value = data.description || '';
-                document.getElementById('updatePrice').value = data.price || '';
-                document.getElementById('updateCategory').value = data.category || '';
-
-                updateProductForm.style.display = 'block'; // Mostra o formulário de edição
-                productDetailMessage.style.color = 'green';
-                productDetailMessage.innerText = `Produto ID ${productId} carregado para edição.`;
-            } else if (response.status === 404) {
-                productDetailMessage.style.color = 'orange';
-                productDetailMessage.innerText = `Produto ID ${productId} não encontrado.`;
+            ELEMENTS.updateProductForm.style.display = 'block';
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productLoadedForEdit(productId), 'success');
+        } else {
+            // fetchData já trata erros de conexão e autenticação
+            // Aqui podemos adicionar tratamento para 404 especificamente se fetchData não o fizer
+            // Por simplicidade, fetchData lança erro, então o 'null' já cobre
+            if (productId && ELEMENTS.productDetailMessage.innerText === MESSAGES.serverConnectionError) {
+                // Se o erro foi de conexão, a mensagem já está lá
             } else {
-                productDetailMessage.style.color = 'red';
-                productDetailMessage.innerText = data.detail || data.message || 'Erro ao buscar produto.';
-                console.error('Erro ao buscar produto:', data);
+                displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productNotFound(productId), 'warning');
             }
-        } catch (error) {
-            console.error('Erro na requisição de buscar produto:', error);
-            productDetailMessage.style.color = 'red';
-            productDetailMessage.innerText = 'Não foi possível conectar ao servidor para buscar o produto.';
         }
-    });
+    }
 
-   
-    // --- PATCH /api/v1/products/{product_id} (Patch Product) ---
-    submitPatchButton.addEventListener('click', async () => {
+    // PATCH /api/v1/products/{product_id} (Patch Product)
+    async function patchProduct() {
         if (!currentEditProductId) {
-            alert('Nenhum produto selecionado para atualização parcial.');
+            alert(`${MESSAGES.noProductSelected}atualização parcial.`);
             return;
         }
-        productDetailMessage.innerText = '';
+        displayMessage(ELEMENTS.productDetailMessage, '', 'default');
 
-        // Cria um objeto apenas com os campos que foram modificados no formulário
         const patchData = {};
-        const name = document.getElementById('updateName').value;
-        const description = document.getElementById('updateDescription').value;
-        const price = parseFloat(document.getElementById('updatePrice').value);
-        const category = document.getElementById('updateCategory').value;
+        const name = ELEMENTS.updateName.value;
+        const description = ELEMENTS.updateDescription.value;
+        const price = parseFloat(ELEMENTS.updatePrice.value);
+        const category = ELEMENTS.updateCategory.value;
 
-        // Adiciona ao patchData apenas se o campo tiver um valor ou se for booleano
         if (name) patchData.name = name;
         if (description) patchData.description = description;
         if (!isNaN(price) && price > 0) patchData.price = price;
         if (category) patchData.category = category;
-       
+
         if (Object.keys(patchData).length === 0) {
-            productDetailMessage.style.color = 'orange';
-            productDetailMessage.innerText = 'Nenhum campo para atualização parcial foi modificado.';
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.noFieldsToPatch, 'warning');
             return;
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/products/${currentEditProductId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(patchData)
-            });
+        const data = await fetchData(`${API_BASE_URL}/api/v1/products/${currentEditProductId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patchData)
+        });
 
-            if (handleAuthError(response)) return;
-
-            const data = await response.json();
-
-            if (response.ok) {
-                productDetailMessage.style.color = 'green';
-                productDetailMessage.innerText = `Produto ID ${currentEditProductId} atualizado (PATCH) com sucesso!`;
-                fetchProducts(); // Recarrega a lista
-            } else {
-                productDetailMessage.style.color = 'red';
-                productDetailMessage.innerText = data.detail || data.message || 'Erro ao atualizar produto (PATCH).';
-                console.error('Erro ao atualizar produto (PATCH):', data);
-            }
-        } catch (error) {
-            console.error('Erro na requisição de atualização (PATCH):', error);
-            productDetailMessage.style.color = 'red';
-            productDetailMessage.innerText = 'Não foi possível conectar ao servidor para atualizar o produto.';
+        if (data) {
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productUpdatedSuccess(currentEditProductId), 'success');
+            fetchProducts();
+        } else {
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.errorUpdatingProduct, 'error');
         }
-    });
+    }
 
-    // --- DELETE /api/v1/products/{product_id} (Delete Product) ---
-    deleteProductBtn.addEventListener('click', async () => {
+    // DELETE /api/v1/products/{product_id} (Delete Product)
+    async function deleteProduct() {
         if (!currentEditProductId) {
-            alert('Nenhum produto selecionado para exclusão.');
+            alert(`${MESSAGES.noProductSelected}exclusão.`);
             return;
         }
-        productDetailMessage.innerText = '';
+        displayMessage(ELEMENTS.productDetailMessage, '', 'default');
 
-        if (!confirm(`Tem certeza que deseja deletar o produto ID ${currentEditProductId}?`)) {
+        if (!confirm(MESSAGES.confirmDelete(currentEditProductId))) {
             return;
         }
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/products/${currentEditProductId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
+        const data = await fetchData(`${API_BASE_URL}/api/v1/products/${currentEditProductId}`, {
+            method: 'DELETE',
+        });
 
-            if (handleAuthError(response)) return;
-
-            if (response.ok) { // DELETE geralmente retorna 204 No Content ou 200 OK
-                productDetailMessage.style.color = 'green';
-                productDetailMessage.innerText = `Produto ID ${currentEditProductId} deletado com sucesso!`;
-                updateProductForm.style.display = 'none'; // Esconde o formulário
-                currentEditProductId = null; // Reseta o ID
-                getProductIdInput.value = ''; // Limpa o campo de busca
-                fetchProducts(); // Recarrega a lista
-            } else {
-                const data = await response.json();
-                productDetailMessage.style.color = 'red';
-                productDetailMessage.innerText = data.detail || data.message || 'Erro ao deletar produto.';
-                console.error('Erro ao deletar produto:', data);
-            }
-        } catch (error) {
-            console.error('Erro na requisição de exclusão de produto:', error);
-            productDetailMessage.style.color = 'red';
-            productDetailMessage.innerText = 'Não foi possível conectar ao servidor para deletar o produto.';
+        // Para DELETE, data pode ser vazia se a resposta for 204 No Content
+        // A função fetchData já verifica response.ok, então se não for null, a operação foi bem-sucedida.
+        if (data !== null) { // Se a requisição não retornou erro (mesmo que a resposta seja vazia)
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productDeletedSuccess(currentEditProductId), 'success');
+            ELEMENTS.updateProductForm.style.display = 'none';
+            currentEditProductId = null;
+            ELEMENTS.getProductIdInput.value = '';
+            fetchProducts();
+        } else {
+            // A mensagem de erro já foi definida por fetchData se houver um erro de rede/auth
+            // Caso contrário, significa que a API retornou um erro específico no data.detail/message
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.errorDeletingProduct, 'error');
         }
-    });
+    }
+
+    // --- Chamadas Iniciais e Event Listeners ---
+    ELEMENTS.fetchProductsBtn.addEventListener('click', fetchProducts);
+    ELEMENTS.createProductForm.addEventListener('submit', createProduct);
+    ELEMENTS.getProductBtn.addEventListener('click', getProductById);
+    ELEMENTS.submitPatchButton.addEventListener('click', patchProduct);
+    ELEMENTS.deleteProductBtn.addEventListener('click', deleteProduct);
+
+    // Carrega os produtos ao iniciar a página
+    fetchProducts();
 });

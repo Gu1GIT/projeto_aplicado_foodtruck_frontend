@@ -434,8 +434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (response.ok) {
                 // CORREÇÃO FINAL E DEFINITIVA: Usar result.locator e result.id diretamente da resposta da API
-                alert(`Pedido ${result.locator} (ID: #${result.id.substring(0, 8)}) enviado com sucesso!`);
-                cart = []; // Limpa o carrinho após o pedido
+                alert(`Pedido (ID: #${result.id.substring(0, 8)}) enviado com sucesso!`);
                 cart = []; // Limpa o carrinho após o pedido
                 localStorage.removeItem('cart');
                 updateCartCount();

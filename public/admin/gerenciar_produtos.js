@@ -4,7 +4,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // --- Configurações e Referências ---
     const API_BASE_URL = window.API_BASE_URL ; 
-    
+
     const ELEMENTS = {
         logoutBtn: document.getElementById('logoutBtn'),
         productsList: document.getElementById('productsList'),
@@ -178,6 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <strong>ID:</strong> ${item.id}<br>
                         <strong>Nome:</strong> ${item.name}<br>
                         <strong>Preço:</strong> R$ ${item.price ? item.price.toFixed(2) : 'N/A'}<br>
+                         <strong>Descrição:</strong> ${item.description || 'N/A'}<br>
                         <strong>Categoria:</strong> ${item.category || 'N/A'}<br>
                     `;
                     listItem.style.cursor = 'pointer';

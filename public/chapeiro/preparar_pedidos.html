@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chapeiro - Preparar Pedidos</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
+    <meta name="description" content="Interface do Chapeiro para gestão e acompanhamento de pedidos de lanchonete por status.">
+    <title>Chapeiro - Preparar Pedidos</title> <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/chapeiro.css">
 </head>
 <body>
     <header>
-        <div class="container">
-            <h1>Chapeiro - Preparar Pedidos</h1>
+        <h1>Chapeiro - Preparar Pedidos</h1>
             <nav>
                 <ul>
-                    <li><a href="#" id="logoutBtn">Sair</a></li>
+                <li><a href="#" id="logoutBtn">Sair</a></li>
                 </ul>
             </nav>
         </div>
@@ -21,10 +20,13 @@
 
     <main class="container">
         <section id="orders-section">
-            <h2>Gestão de Pedidos por Status</h2>
+            <h2>Gestão de Pedidos por Status</h2>          
             <p id="loadingMessage" class="message">Carregando pedidos...</p>
             <p id="noOrdersMessage" class="message" style="display: none;">Nenhum pedido encontrado nos status visíveis.</p>
 
+            <div class="filter-controls-container">
+                <button id="toggleFilterBtn" class="btn-primary filter-toggle-btn">Ver Pedidos de Outros Dias</button>
+            </div>
             <div class="orders-board">
                 <div class="status-column" id="column-pending">
                     <h3>Pendentes <span class="order-count" id="count-pending"> (0)</span></h3>
@@ -60,6 +62,5 @@
     </footer>
 
     <script src="../../assets/js/common.js"></script>
-    <script src="preparar_pedidos.js"></script>
-</body>
+    <script src="preparar_pedidos.js"></script> </body>
 </html>

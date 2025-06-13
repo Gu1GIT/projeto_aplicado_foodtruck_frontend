@@ -248,8 +248,8 @@ async function carregarTodosPedidos() {
 
                     // --- Regras de Transição de Status ---
                     const transicoesStatus = {
-                        [STATUS_PEDIDO.PENDENTE]: [STATUS_PEDIDO.EM_PREPARACAO, STATUS_PEDIDO.CANCELADO],
-                        [STATUS_PEDIDO.EM_PREPARACAO]: [STATUS_PEDIDO.CONCLUIDO, STATUS_PEDIDO.CANCELADO],
+                        [STATUS_PEDIDO.PENDENTE]: [STATUS_PEDIDO.CANCELADO],
+                        [STATUS_PEDIDO.EM_PREPARACAO]: [STATUS_PEDIDO.CANCELADO],
                         [STATUS_PEDIDO.CONCLUIDO]: [],
                         [STATUS_PEDIDO.CANCELADO]: [STATUS_PEDIDO.PENDENTE]
                     };

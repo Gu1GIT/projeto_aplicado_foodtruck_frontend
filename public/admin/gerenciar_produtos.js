@@ -45,15 +45,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         productCreatedSuccessNoId: 'Produto criado com sucesso! (ID não disponível na resposta da API)',
         errorCreatingProduct: 'Erro ao criar produto.',
         idRequired: 'Por favor, insira um ID de produto.',
-        productLoadedForEdit: (id) => `Produto ID ${id} carregado para edição.`,
+        productLoadedForEdit: (name) => `Produto  ${name} carregado para edição.`,
         productNotFound: (id) => `Produto ID ${id} não encontrado.`,
         errorFetchingProduct: 'Erro ao buscar produto.',
         noFieldsToPatch: 'Nenhum campo para atualização parcial foi modificado.',
-        productUpdatedSuccess: (id) => `Produto ID ${id} atualizado com sucesso!`,
+        productUpdatedSuccess: (name) => `Produto ${name} atualizado com sucesso!`,
         errorUpdatingProduct: 'Erro ao atualizar produto.',
         noProductSelected: 'Nenhum produto selecionado para ',
         confirmDelete: (id) => `Tem certeza que deseja deletar o produto ID ${id}?`,
-        productDeletedSuccess: (id) => `Produto ID ${id} deletado com sucesso!`,
+        productDeletedSuccess: (name) => `Produto ID ${name} deletado com sucesso!`,
         errorDeletingProduct: 'Erro ao deletar produto.',
     };
 
@@ -262,7 +262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ELEMENTS.updateCategory.value = data.category || '';
 
             ELEMENTS.updateProductForm.style.display = 'block';
-            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productLoadedForEdit(productId), 'success');
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productLoadedForEdit(data.name), 'success');
         } else {
             // fetchData já trata erros de conexão e autenticação
             // Aqui podemos adicionar tratamento para 404 especificamente se fetchData não o fizer
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (data) {
-            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productUpdatedSuccess(currentEditProductId), 'success');
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productUpdatedSuccess(patchData.name), 'success');
             fetchProducts();
         } else {
             displayMessage(ELEMENTS.productDetailMessage, MESSAGES.errorUpdatingProduct, 'error');
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Para DELETE, data pode ser vazia se a resposta for 204 No Content
         // A função fetchData já verifica response.ok, então se não for null, a operação foi bem-sucedida.
         if (data !== null) { // Se a requisição não retornou erro (mesmo que a resposta seja vazia)
-            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productDeletedSuccess(currentEditProductId), 'success');
+            displayMessage(ELEMENTS.productDetailMessage, MESSAGES.productDeletedSuccess(ELEMENTS.updateName.value), 'success');
             ELEMENTS.updateProductForm.style.display = 'none';
             currentEditProductId = null;
             ELEMENTS.getProductIdInput.value = '';

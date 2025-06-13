@@ -1,5 +1,5 @@
 // public/chapeiro/avaliar_pedidos.js
-// Lógica para atribuir notas a pedidos e exibir ranking de produtos.
+// Lógica para atribuir/editar notas de pedidos e exibir ranking de produtos.
 
 // --- Constantes para Mensagens e URLs ---
 const MENSAGENS_AVALIAR = {
@@ -8,8 +8,10 @@ const MENSAGENS_AVALIAR = {
     ERRO_CONFIGURACAO_API: 'Erro de configuração: API_BASE_URL não encontrada.',
     ERRO_CARREGAR_PEDIDOS_AVALIAR: 'Erro ao carregar pedidos para avaliação:',
     NENHUM_PEDIDO_AVALIAR: 'Nenhum pedido concluído disponível para avaliação no momento.',
-    ERRO_ATRIBUIR_NOTA: 'Erro ao atribuir nota ao pedido:',
-    NOTA_SUCESSO: (locator) => `Nota atribuída com sucesso ao pedido #${locator}!`,
+    ERRO_CARREGAR_PEDIDOS_AVALIADOS: 'Erro ao carregar pedidos já avaliados:',
+    NENHUM_PEDIDO_AVALIADO: 'Nenhum pedido foi avaliado ainda.',
+    ERRO_ATRIBUIR_NOTA: 'Erro ao atribuir/atualizar nota do pedido:',
+    NOTA_SUCESSO: (locator) => `Nota de #${locator} atualizada com sucesso!`,
     ERRO_CONEXAO_SERVIDOR: 'Não foi possível conectar ao servidor.',
     ERRO_CARREGAR_PRODUTOS: 'Erro ao carregar produtos para ranking:',
     ERRO_CARREGAR_PEDIDOS_RANKING: 'Erro ao carregar pedidos para ranking:',
@@ -22,6 +24,7 @@ const URLS_AVALIAR = {
 // --- Referências Globais para os Elementos DOM ---
 let logoutBtn;
 
+// Elementos da seção "Avaliar Novos Pedidos Concluídos"
 let evalOrdersLoading;
 let noEvalOrdersMessage;
 let ordersToEvaluateList;
@@ -34,17 +37,22 @@ let orderRatingInput;
 let submitRatingBtn;
 let evaluationMessage;
 
+// Elementos da seção "Pedidos Já Avaliados"
+let evaluatedOrdersLoading;
+let noEvaluatedOrdersMessage;
+let evaluatedOrdersList;
+
+// Elementos da seção "Ranking de Produtos"
 let rankingLoadingMessage;
 let noRankingMessage;
 let rankingTable;
 let rankingTableBody;
 
 // Variáveis globais para dados
-let currentSelectedOrderId = null; // Armazena o ID do pedido atualmente selecionado para avaliação
+let currentSelectedOrderId = null; // Armazena o ID do pedido atualmente selecionado para atribuição de nota
 let currentSelectedOrderLocator = null; // Armazena o localizador do pedido atualmente selecionado
 let productsCache = new Map(); // Cache para armazenar ID do produto -> Nome do produto
 let allOrdersDataForRanking = []; // Para armazenar todos os pedidos para o ranking
-let ordersToEvaluate = []; // Lista de pedidos COMPLETED para exibir e avaliar
 
 // --- Funções Auxiliares ---
 const obterTokenAcesso = () => localStorage.getItem('accessToken');
@@ -87,21 +95,64 @@ const formatarDataCriacao = (dataString) => {
 };
 
 /**
- * Exibe uma mensagem na tela (sucesso/erro).
+ * Exibe uma mensagem na tela (sucesso/erro) na seção de avaliação de novos pedidos.
  * @param {string} msg A mensagem a ser exibida.
  * @param {string} type O tipo de mensagem ('success' ou 'error').
  */
-const showMessage = (msg, type) => {
+const showMainEvaluationMessage = (msg, type) => {
     evaluationMessage.textContent = msg;
     evaluationMessage.className = `message ${type}`;
     evaluationMessage.style.display = 'block';
 };
 
-const clearMessage = () => {
+const clearMainEvaluationMessage = () => {
     evaluationMessage.style.display = 'none';
     evaluationMessage.textContent = '';
     evaluationMessage.className = 'message';
 };
+
+/**
+ * Exibe uma mensagem dentro de um card de pedido avaliado.
+ * @param {HTMLElement} cardElement O elemento do card onde a mensagem será exibida.
+ * @param {string} msg A mensagem a ser exibida.
+ * @param {string} type O tipo de mensagem ('success' ou 'error').
+ */
+const showCardMessage = (cardElement, msg, type) => {
+    let msgElement = cardElement.querySelector('.card-message');
+    if (!msgElement) {
+        msgElement = document.createElement('p');
+        msgElement.className = 'message card-message';
+        cardElement.appendChild(msgElement);
+    }
+    msgElement.textContent = msg;
+    msgElement.className = `message card-message ${type}`;
+    msgElement.style.display = 'block';
+};
+
+const clearCardMessage = (cardElement) => {
+    const msgElement = cardElement.querySelector('.card-message');
+    if (msgElement) {
+        msgElement.style.display = 'none';
+        msgElement.textContent = '';
+        msgElement.className = 'message card-message';
+    }
+};
+
+/**
+ * Gera a lista de produtos para exibir dentro de um card de pedido.
+ * @param {Array} products Array de objetos de produto do pedido (ex: [{product_id: 'abc', quantity: 1}]).
+ * @returns {string} HTML formatado da lista de produtos.
+ */
+function renderOrderProducts(products) {
+    if (!products || products.length === 0) {
+        return '<p>Nenhum produto listado.</p>';
+    }
+    const productItems = products.map(item => {
+        const productName = productsCache.get(item.product_id) || `Produto Desconhecido (ID: ${item.product_id})`;
+        return `<li>${item.quantity}x ${productName}</li>`;
+    }).join('');
+    return `<ul class="order-products-list">${productItems}</ul>`;
+}
 
 // --- Funções Principais ---
 
@@ -139,21 +190,19 @@ async function carregarProdutos() {
 }
 
 /**
- * Carrega e exibe todos os pedidos concluídos que podem ser avaliados.
+ * Carrega e exibe todos os pedidos concluídos que **ainda não foram avaliados**.
  */
 async function carregarPedidosParaAvaliar() {
     evalOrdersLoading.style.display = 'block';
     noEvalOrdersMessage.style.display = 'none';
     ordersToEvaluateList.innerHTML = ''; // Limpa a lista existente
     ratingInputCard.style.display = 'none'; // Esconde o card de input de nota
-    clearMessage();
+    clearMainEvaluationMessage();
 
     try {
         const queryParams = new URLSearchParams();
         queryParams.append('status', 'COMPLETED'); // Apenas pedidos concluídos
-        queryParams.append('limit', 500); // Exemplo: limite alto para buscar muitos pedidos
-        // Opcional: Adicionar filtro para pedidos sem rating? (se sua API suportar)
-        // queryParams.append('rating', 'null'); // Se sua API suportar, para pegar apenas não avaliados
+        queryParams.append('limit', 500); 
 
         const resposta = await fetch(`${API_BASE_URL}/api/v1/orders/?${queryParams.toString()}`, {
             method: 'GET',
@@ -171,26 +220,23 @@ async function carregarPedidosParaAvaliar() {
         const resultado = await resposta.json();
 
         if (resposta.ok && resultado.orders) {
-            // Filtra localmente se a API não suportar 'rating=null'
-            // Mantém apenas pedidos COMPLETED que ainda não têm nota
-            ordersToEvaluate = resultado.orders.filter(order => 
+            // Filtra localmente para pegar apenas pedidos COMPLETED que ainda não têm nota
+            const pedidosSemNota = resultado.orders.filter(order => 
                 order.status.toUpperCase() === 'COMPLETED' && (order.rating === undefined || order.rating === null)
             );
             
-            if (ordersToEvaluate.length === 0) {
+            if (pedidosSemNota.length === 0) {
                 noEvalOrdersMessage.style.display = 'block';
             } else {
-                ordersToEvaluate.forEach(pedido => {
+                pedidosSemNota.forEach(pedido => {
                     const orderCard = document.createElement('div');
                     orderCard.className = 'order-to-evaluate-card';
-                    orderCard.dataset.orderId = pedido.id; // Armazena o ID no dataset
+                    orderCard.dataset.orderId = pedido.id; 
                     orderCard.innerHTML = `
                         <h4>Pedido: ${pedido.locator}</h4>
-                        <p>Status: <strong>${pedido.status.toUpperCase()}</strong></p>
                         <p>Total: <strong>R$ ${pedido.total ? pedido.total.toFixed(2) : '0.00'}</strong></p>
                         <p>Criado em: <strong>${formatarDataCriacao(pedido.created_at)}</strong></p>
-                        ${pedido.rating !== undefined && pedido.rating !== null ? `<p>Nota atual: <strong>${pedido.rating}</strong></p>` : ''}
-                    `;
+                        ${renderOrderProducts(pedido.products)} `;
                     orderCard.addEventListener('click', () => selectOrderForRating(pedido));
                     ordersToEvaluateList.appendChild(orderCard);
                 });
@@ -210,11 +256,11 @@ async function carregarPedidosParaAvaliar() {
 }
 
 /**
- * Seleciona um pedido para avaliação, exibe seus detalhes e prepara o formulário.
+ * Seleciona um pedido para avaliação (primeira vez), exibe seus detalhes e prepara o formulário.
  * @param {object} pedido - O objeto do pedido a ser avaliado.
  */
 function selectOrderForRating(pedido) {
-    // Remove a classe 'selected' de todos os cards
+    // Remove a classe 'selected' de todos os cards de "novos pedidos"
     document.querySelectorAll('.order-to-evaluate-card').forEach(card => {
         card.classList.remove('selected');
     });
@@ -229,36 +275,39 @@ function selectOrderForRating(pedido) {
     currentSelectedOrderLocator = pedido.locator;
     
     selectedOrderLocator.textContent = pedido.locator;
-    selectedOrderStatus.textContent = pedido.status.toUpperCase();
+    selectedOrderStatus.textContent = pedido.status.toUpperCase(); // Pode remover isso se quiser, já que são sempre COMPLETED
     selectedOrderTotal.textContent = pedido.total ? pedido.total.toFixed(2) : '0.00';
     selectedOrderCreatedAt.textContent = formatarDataCriacao(pedido.created_at);
     
-    // Pré-preenche a nota se já existir (e o pedido foi filtrado para ser avaliável)
-    orderRatingInput.value = pedido.rating !== undefined && pedido.rating !== null ? pedido.rating : '';
-
+    orderRatingInput.value = ''; // Limpa o campo de nota para nova avaliação
     ratingInputCard.style.display = 'block'; // Mostra o card de input de nota
     submitRatingBtn.disabled = false;
-    clearMessage();
+    clearMainEvaluationMessage();
 }
 
 /**
- * Atribui uma nota a um pedido.
+ * Atribui/Atualiza uma nota a um pedido.
+ * Esta função agora é genérica para atribuir ou editar.
+ * @param {string} orderId O ID do pedido.
+ * @param {string} orderLocator O localizador do pedido.
+ * @param {number} rating A nota a ser atribuída.
+ * @param {HTMLElement} [messageElement] Elemento HTML para exibir a mensagem (opcional, para cards individuais).
  */
-async function submitOrderRating() {
-    clearMessage();
-    if (!currentSelectedOrderId) {
-        showMessage('Nenhum pedido selecionado para avaliação.', 'error');
-        return;
-    }
+async function updateOrderRating(orderId, orderLocator, rating, messageElement = null) {
+    clearMainEvaluationMessage(); // Limpa a mensagem principal
+    if (messageElement) clearCardMessage(messageElement.closest('.evaluated-order-card')); // Limpa mensagem do card se houver
 
-    const rating = parseFloat(orderRatingInput.value);
     if (isNaN(rating) || rating < 0 || rating > 5) {
-        showMessage('Por favor, insira uma nota válida entre 0 e 5.', 'error');
-        return;
+        if (messageElement) {
+            showCardMessage(messageElement.closest('.evaluated-order-card'), 'Nota inválida (0-5).', 'error');
+        } else {
+            showMainEvaluationMessage('Por favor, insira uma nota válida entre 0 e 5.', 'error');
+        }
+        return false;
     }
 
     try {
-        const resposta = await fetch(`${API_BASE_URL}/api/v1/orders/${currentSelectedOrderId}`, {
+        const resposta = await fetch(`${API_BASE_URL}/api/v1/orders/${orderId}`, {
             method: 'PATCH', // PATCH para atualizar apenas o campo 'rating'
             headers: {
                 'Authorization': `Bearer ${obterTokenAcesso()}`,
@@ -268,32 +317,139 @@ async function submitOrderRating() {
             body: JSON.stringify({ rating: rating }),
         });
 
-        if (lidarComErroAutenticacao(resposta)) return;
+        if (lidarComErroAutenticacao(resposta)) return false;
 
         const resultado = await resposta.json();
 
         if (resposta.ok) {
-            showMessage(MENSAGENS_AVALIAR.NOTA_SUCESSO(currentSelectedOrderLocator), 'success');
-            // Após a avaliação, recarrega a lista de pedidos avaliáveis
-            // e também o ranking para refletir a mudança.
+            if (messageElement) {
+                showCardMessage(messageElement.closest('.evaluated-order-card'), MENSAGENS_AVALIAR.NOTA_SUCESSO(orderLocator), 'success');
+            } else {
+                showMainEvaluationMessage(MENSAGENS_AVALIAR.NOTA_SUCESSO(orderLocator), 'success');
+            }
+            
+            // Após a avaliação/edição, recarrega ambas as listas de pedidos e o ranking
             await carregarPedidosParaAvaliar(); 
-            await carregarTodosPedidosParaRanking();
+            await carregarPedidosAvaliados();
+            await carregarTodosPedidosParaRanking(); // Recarrega os dados completos para o ranking
             calcularEExibirRanking();
-            // Opcional: Limpar o formulário de avaliação ou escondê-lo após o sucesso
-            ratingInputCard.style.display = 'none';
-            orderRatingInput.value = '';
-            currentSelectedOrderId = null;
-            currentSelectedOrderLocator = null;
 
+            // Reseta a interface de nova avaliação se foi de lá que veio a chamada
+            if (!messageElement) { 
+                ratingInputCard.style.display = 'none';
+                orderRatingInput.value = '';
+                currentSelectedOrderId = null;
+                currentSelectedOrderLocator = null;
+            }
+            return true;
         } else {
-            showMessage(`${MENSAGENS_AVALIAR.ERRO_ATRIBUIR_NOTA} ${resultado.detail || resultado.message || resposta.statusText}`, 'error');
+            const errorMsg = `${MENSAGENS_AVALIAR.ERRO_ATRIBUIR_NOTA} ${resultado.detail || resultado.message || resposta.statusText}`;
+            if (messageElement) {
+                showCardMessage(messageElement.closest('.evaluated-order-card'), errorMsg, 'error');
+            } else {
+                showMainEvaluationMessage(errorMsg, 'error');
+            }
             console.error('Erro ao atribuir nota:', resultado);
+            return false;
         }
     } catch (error) {
         console.error('Erro na requisição de atribuição de nota:', error);
-        showMessage(MENSAGENS_AVALIAR.ERRO_CONEXAO_SERVIDOR, 'error');
+        if (messageElement) {
+            showCardMessage(messageElement.closest('.evaluated-order-card'), MENSAGENS_AVALIAR.ERRO_CONEXAO_SERVIDOR, 'error');
+        } else {
+            showMainEvaluationMessage(MENSAGENS_AVALIAR.ERRO_CONEXAO_SERVIDOR, 'error');
+        }
+        return false;
     }
 }
+
+// Event listener para o botão de atribuir nota na seção de novos pedidos
+async function handleSubmitNewRating() {
+    await updateOrderRating(currentSelectedOrderId, currentSelectedOrderLocator, parseFloat(orderRatingInput.value));
+}
+
+
+/**
+ * Carrega e exibe todos os pedidos concluídos que **já foram avaliados**.
+ */
+async function carregarPedidosAvaliados() {
+    evaluatedOrdersLoading.style.display = 'block';
+    noEvaluatedOrdersMessage.style.display = 'none';
+    evaluatedOrdersList.innerHTML = ''; // Limpa a lista existente
+
+    try {
+        const queryParams = new URLSearchParams();
+        queryParams.append('status', 'COMPLETED'); // Apenas pedidos concluídos
+        queryParams.append('limit', 500); 
+
+        const resposta = await fetch(`${API_BASE_URL}/api/v1/orders/?${queryParams.toString()}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${obterTokenAcesso()}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (lidarComErroAutenticacao(resposta)) {
+            evaluatedOrdersLoading.style.display = 'none';
+            return;
+        }
+
+        const resultado = await resposta.json();
+
+        if (resposta.ok && resultado.orders) {
+            // Filtra localmente para pegar apenas pedidos COMPLETED que já têm nota
+            const pedidosComNota = resultado.orders.filter(order => 
+                order.status.toUpperCase() === 'COMPLETED' && (order.rating !== undefined && order.rating !== null)
+            );
+            
+            if (pedidosComNota.length === 0) {
+                noEvaluatedOrdersMessage.style.display = 'block';
+            } else {
+                pedidosComNota.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Ordena pelos mais recentes
+                pedidosComNota.forEach(pedido => {
+                    const orderCard = document.createElement('div');
+                    orderCard.className = 'evaluated-order-card';
+                    orderCard.dataset.orderId = pedido.id; 
+                    orderCard.innerHTML = `
+                        <h4>Pedido: ${pedido.locator}</h4>
+                        <p>Total: <strong>R$ ${pedido.total ? pedido.total.toFixed(2) : '0.00'}</strong></p>
+                        <p>Criado em: <strong>${formatarDataCriacao(pedido.created_at)}</strong></p>
+                        ${renderOrderProducts(pedido.products)} <div class="current-rating">Nota Atual: <strong>${pedido.rating.toFixed(1)}</strong></div>
+                        <div class="rating-edit-group">
+                            <label for="editRating-${pedido.id}">Nova Nota:</label>
+                            <input type="number" id="editRating-${pedido.id}" min="0" max="5" step="0.5" value="${pedido.rating}">
+                            <button class="btn-secondary update-evaluated-rating-btn" data-order-id="${pedido.id}" data-order-locator="${pedido.locator}">Atualizar</button>
+                        </div>
+                    `;
+                    evaluatedOrdersList.appendChild(orderCard);
+                });
+
+                // Adiciona event listeners aos botões de atualização dos pedidos avaliados
+                document.querySelectorAll('.update-evaluated-rating-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const orderId = event.target.dataset.orderId;
+                        const orderLocator = event.target.dataset.orderLocator;
+                        const ratingInput = document.getElementById(`editRating-${orderId}`);
+                        const newRating = parseFloat(ratingInput.value);
+                        await updateOrderRating(orderId, orderLocator, newRating, event.target); // Passa o elemento para showCardMessage
+                    });
+                });
+            }
+        } else {
+            console.error(MENSAGENS_AVALIAR.ERRO_CARREGAR_PEDIDOS_AVALIADOS, resultado.detail || resultado.message || resposta.statusText);
+            noEvaluatedOrdersMessage.textContent = MENSAGENS_AVALIAR.ERRO_CARREGAR_PEDIDOS_AVALIADOS + ' ' + (resultado.detail || resposta.statusText);
+            noEvaluatedOrdersMessage.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Erro na requisição de pedidos avaliados:', error);
+        noEvaluatedOrdersMessage.textContent = MENSAGENS_AVALIAR.ERRO_CONEXAO_SERVIDOR;
+        noEvaluatedOrdersMessage.style.display = 'block';
+    } finally {
+        evaluatedOrdersLoading.style.display = 'none';
+    }
+}
+
 
 /**
  * Carrega todos os pedidos (especificamente os COMPLETED) para o cálculo do ranking.
@@ -413,6 +569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Atribuição das Referências DOM ---
     logoutBtn = document.getElementById('logoutBtn');
 
+    // Seção de Avaliar Novos Pedidos
     evalOrdersLoading = document.getElementById('evalOrdersLoading');
     noEvalOrdersMessage = document.getElementById('noEvalOrdersMessage');
     ordersToEvaluateList = document.getElementById('ordersToEvaluateList');
@@ -425,6 +582,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitRatingBtn = document.getElementById('submitRatingBtn');
     evaluationMessage = document.getElementById('evaluationMessage');
 
+    // Seção de Pedidos Já Avaliados
+    evaluatedOrdersLoading = document.getElementById('evaluatedOrdersLoading');
+    noEvaluatedOrdersMessage = document.getElementById('noEvaluatedOrdersMessage');
+    evaluatedOrdersList = document.getElementById('evaluatedOrdersList');
+
+    // Seção de Ranking
     rankingLoadingMessage = document.getElementById('rankingLoadingMessage');
     noRankingMessage = document.getElementById('noRankingMessage');
     rankingTable = document.getElementById('rankingTable');
@@ -456,14 +619,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (submitRatingBtn) {
-        submitRatingBtn.addEventListener('click', submitOrderRating);
+        submitRatingBtn.addEventListener('click', handleSubmitNewRating);
     }
+    
+    // --- Carregamento Inicial de Dados ---
+    await carregarProdutos(); // Essencial para o ranking E para exibir nomes dos produtos nos pedidos
+    await carregarPedidosParaAvaliar(); // Preenche a lista de pedidos SEM NOTA
+    await carregarPedidosAvaliados(); // Preenche a lista de pedidos COM NOTA
+    await carregarTodosPedidosParaRanking(); // Preenche os dados completos para o ranking
 
-    // Carrega produtos e pedidos para o ranking e para avaliação na inicialização
-    await carregarProdutos(); // Essencial para o ranking
-    await carregarPedidosParaAvaliar(); // Preenche a lista de pedidos para avaliar
-    await carregarTodosPedidosParaRanking(); // Preenche os dados para o ranking
-
+    // Após carregar os dados, calcula e exibe o ranking
     if (productsCache.size > 0 && allOrdersDataForRanking.length > 0) {
         calcularEExibirRanking();
     } else {

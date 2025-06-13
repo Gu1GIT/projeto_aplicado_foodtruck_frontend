@@ -14,6 +14,7 @@
             <nav>
                 <ul>
                     <li><a href="menu.html">Menu</a></li>
+
                 </ul>
             </nav>
         </div>
@@ -21,11 +22,11 @@
 
     <main class="container">
         <section id="evaluate-order-section">
-            <h2>Avaliar Pedidos Concluídos</h2>
+            <h2>Avaliar Novos Pedidos Concluídos</h2>
             <p id="evalOrdersLoading" class="message">Carregando pedidos concluídos para avaliação...</p>
-            <p id="noEvalOrdersMessage" class="message" style="display: none;">Nenhum pedido concluído disponível para avaliação.</p>
+            <p id="noEvalOrdersMessage" class="message" style="display: none;">Nenhum pedido concluído disponível para avaliação no momento.</p>
             
-            <div class="orders-to-evaluate-list" id="ordersToEvaluateList">
+            <div class="orders-list-container" id="ordersToEvaluateList">
                 </div>
 
             <div id="ratingInputCard" class="form-card" style="display: none;">
@@ -34,10 +35,19 @@
                 <div class="rating-input-group">
                     <label for="orderRatingInput">Nota (0-5):</label>
                     <input type="number" id="orderRatingInput" min="0" max="5" step="0.5" placeholder="Ex: 4.5">
-                    <button id="submitRatingBtn" class="btn-primary" disabled>Atribuir Nota</button>
+                    <button id="submitRatingBtn" class="btn-primary">Atribuir Nota</button>
                 </div>
                 <p id="evaluationMessage" class="message" style="display: none;"></p>
             </div>
+        </section>
+
+        <hr> <section id="evaluated-orders-section">
+            <h2>Pedidos Já Avaliados</h2>
+            <p id="evaluatedOrdersLoading" class="message">Carregando pedidos avaliados...</p>
+            <p id="noEvaluatedOrdersMessage" class="message" style="display: none;">Nenhum pedido foi avaliado ainda.</p>
+            
+            <div class="orders-list-container" id="evaluatedOrdersList">
+                </div>
         </section>
 
         <hr> <section id="product-ranking-section">

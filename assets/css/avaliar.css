@@ -2,20 +2,21 @@
 
 /* ... (Mantenha todos os estilos existentes que você já tem) ... */
 
-/* Novos estilos para a lista de pedidos a serem avaliados */
-.orders-to-evaluate-list {
+/* Contêiner genérico para listas de pedidos (para evitar repetição de estilos) */
+.orders-list-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 280px ou mais */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Colunas flexíveis */
     gap: 15px;
     margin-top: 20px;
     padding: 15px;
     background-color: #f9f9f9;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    max-height: 400px; /* Altura máxima para a lista rolável */
+    max-height: 400px; /* Altura máxima para as listas rolarem */
     overflow-y: auto; /* Adiciona barra de rolagem se houver muitos pedidos */
 }
 
+/* Estilo para cards de pedido na lista de "Ainda Não Avaliados" */
 .order-to-evaluate-card {
     background-color: #ffffff;
     border: 1px solid #ccc;
@@ -60,7 +61,7 @@
     color: #007bff;
 }
 
-/* Estilo para o card de input de nota */
+/* Estilo para o card de input de nota (para pedidos a avaliar) */
 #ratingInputCard {
     margin-top: 25px; /* Espaço para separar da lista */
     padding: 20px;
@@ -80,4 +81,144 @@
 
 #ratingInputCard span {
     font-weight: bold;
+}
+
+/* --- Novos estilos para a seção de Pedidos Avaliados --- */
+#evaluated-orders-section {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+}
+
+#evaluated-orders-section h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Estilo para cards de pedido na lista de "Já Avaliados" */
+.evaluated-order-card {
+    background-color: #fefefe; /* Quase branco */
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+}
+
+.evaluated-order-card h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    color: #333;
+    background-color: #f4f4f4; /* Fundo cinza para o cabeçalho */
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.evaluated-order-card .current-rating {
+    font-size: 1em;
+    font-weight: bold;
+    color: #28a745; /* Verde para a nota atual */
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.evaluated-order-card .rating-edit-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+}
+
+.evaluated-order-card .rating-edit-group label {
+    font-weight: bold;
+    color: #555;
+    flex-basis: 120px; /* Largura fixa para labels */
+}
+
+.evaluated-order-card .rating-edit-group input[type="number"] {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 0.95em;
+    max-width: 150px; /* Limita a largura do input */
+}
+
+.evaluated-order-card .rating-edit-group .btn-secondary {
+    padding: 8px 15px;
+    border-radius: 5px;
+    border: none;
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    background-color: #6c757d; /* Cinza para o botão de editar */
+    color: white;
+}
+
+.evaluated-order-card .rating-edit-group .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.evaluated-order-card .rating-edit-group .btn-secondary:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Mensagens de sucesso/erro dentro dos cards de edição */
+.evaluated-order-card .message {
+    font-size: 0.85em;
+    margin-top: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: normal; /* Para ser menos chamativo que a mensagem global */
+}
+
+/* public/assets/css/avaliar.css */
+
+/* ... (Mantenha todos os estilos existentes que você já tem) ... */
+
+/* Estilos para a lista de produtos dentro de cada card de pedido */
+.order-products-list {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+    list-style: none; /* Remove marcadores de lista padrão */
+    padding-left: 0;
+}
+
+.order-products-list li {
+    font-size: 0.85em;
+    color: #444;
+    margin-bottom: 3px;
+    padding-left: 15px; /* Recuo para os itens da lista */
+    position: relative;
+}
+
+.order-products-list li::before {
+    content: '•'; /* Marcador personalizado */
+    color: #007bff; /* Cor do marcador */
+    font-weight: bold;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+}
+
+/* Ajuste para o padding do input de nota para não sobrepor */
+.rating-edit-group {
+    /* ... mantenha os estilos existentes ... */
+    padding-top: 10px; /* Garante espaço após a lista de produtos */
 }

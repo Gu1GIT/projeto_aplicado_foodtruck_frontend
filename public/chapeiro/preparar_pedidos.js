@@ -98,7 +98,7 @@ const formatarDataCriacao = (dataString) => {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        timeZone: 'America/Sao_Paulo' // Fuso horário de Florianópolis
+        timeZone: 'America/Mexico_City' // Fuso horário de Florianópolis
     });
 };
 
@@ -214,7 +214,7 @@ async function carregarTodosPedidos() {
             // --- Aplica o filtro de data no frontend se `isFilteredByToday` for true ---
             if (isFilteredByToday && pedidos?.length) {
                 // Obtém a data atual em Florianópolis para comparação
-                const dataAtualFlorianopolis = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                const dataAtualFlorianopolis = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
                 const diaAtual = dataAtualFlorianopolis.getDate();
                 const mesAtual = dataAtualFlorianopolis.getMonth();
                 const anoAtual = dataAtualFlorianopolis.getFullYear();
@@ -222,7 +222,7 @@ async function carregarTodosPedidos() {
                 pedidos = pedidos.filter(pedido => {
                     const dataPedido = new Date(pedido.created_at);
                     // Converte a data do pedido para o fuso horário de Florianópolis para comparação precisa
-                    const dataPedidoFlorianopolis = new Date(dataPedido.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+                    const dataPedidoFlorianopolis = new Date(dataPedido.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
 
                     return dataPedidoFlorianopolis.getDate() === diaAtual &&
                                dataPedidoFlorianopolis.getMonth() === mesAtual &&

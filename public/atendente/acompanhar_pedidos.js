@@ -17,7 +17,7 @@ const MENSAGENS = {
     ERRO_CONFIGURACAO_API: 'Erro de configuração: API_BASE_URL não encontrada.',
     ERRO_CARREGAR_PEDIDOS: 'Erro ao carregar pedidos:',
     ERRO_CONEXAO_SERVIDOR: 'Não foi possível conectar ao servidor.',
-    CONFIRMACAO_ATUALIZACAO: (id, novoStatus) => `Deseja realmente mudar o status do pedido #${id} para "${novoStatus}"?`,
+    CONFIRMACAO_ATUALIZACAO: (locator, novoStatus) => `Deseja realmente mudar o status do pedido #${locator} para "${novoStatus}"?`,
     ERRO_ATUALIZAR_STATUS: 'Erro ao atualizar status do pedido. Verifique as transições permitidas no backend.',
     ERRO_CARREGAR_PRODUTOS: 'Erro ao carregar produtos:'
 };
@@ -237,6 +237,7 @@ async function carregarTodosPedidos() {
                 pedidos.forEach(pedido => {
                     // AQUI ESTÁ A MUDANÇA: 'products' em vez de 'items'
                     const { id, locator, status, products, notes, total, created_at } = pedido; 
+                    
                     const statusExibicao = status.toUpperCase();
 
                     const cartaoPedido = document.createElement('div');
@@ -260,8 +261,8 @@ async function carregarTodosPedidos() {
                             <option value="${statusExibicao}" selected disabled>${statusExibicao}</option>
                             ${proximoStatusPermitido.map(s => `<option value="${s}">${s}</option>`).join('')}
                         </select>
-                        <button class="update-status-btn btn-primary" data-order-id="${id}" disabled>Atualizar</button>
-                    `;
+                        <button class="update-status-btn btn-primary" data-order-id="${id}" data-order-locator="${locator}" disabled>Atualizar</button>
+                        `;
 
                     const dataFormatadaCriacao = formatarDataCriacao(created_at);
 
@@ -425,8 +426,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const elementoSelecao = botao.previousElementSibling;
             const novoStatus = elementoSelecao.value;
 
+            const locatorPedido = botao.dataset.orderLocator;
+
             // Solicita confirmação antes de atualizar o status
-            const confirmarAtualizacao = confirm(MENSAGENS.CONFIRMACAO_ATUALIZACAO(idPedido.substring(0, 12), novoStatus));
+            const confirmarAtualizacao = confirm(MENSAGENS.CONFIRMACAO_ATUALIZACAO(locatorPedido, novoStatus));
             if (!confirmarAtualizacao) {
                 return; // Aborta se o usuário cancelar
             }

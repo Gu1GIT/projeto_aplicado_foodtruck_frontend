@@ -325,51 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Busca o último pedido criado e exibe um alerta com suas informações.
-     */
-    async function displayLastOrder() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/orders/`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'accept': 'application/json'
-                }
-            });
-
-            if (handleAuthError(response)) return;
-
-            const result = await response.json();
-
-            if (response.ok && result.orders && result.orders.length > 0) {
-                // MODIFICAÇÃO AQUI: Pega o último elemento do array 'orders'
-                const lastOrder = result.orders[result.orders.length - 1];
-                
-                // Ou, se a API não retornar ordenado, você pode fazer algo como:
-                // const lastOrder = result.orders.reduce((latest, current) => 
-                //     new Date(latest.created_at) > new Date(current.created_at) ? latest : current
-                // );
-
-                alert(`Pedido Criado:
-                Nº: ${lastOrder.locator}
-                ID: #${lastOrder.id.substring(0, 8)}                         
-                Observações: ${lastOrder.notes || 'Nenhuma'}`);
-             
-
-            } else if (response.ok && result.orders.length === 0) {
-                alert('Não há pedidos registrados no momento.');
-            } else {
-                console.error('Erro ao buscar o último pedido:', result.detail || response.statusText);
-                alert('Não foi possível carregar as informações do último pedido.');
-            }
-        } catch (error) {
-            console.error('Erro de rede ao buscar o último pedido:', error);
-            alert('Erro de conexão ao tentar buscar o último pedido.');
-        }
-    }
-
-    /**
-     * Finaliza o pedido, enviando-o para a API.
+     * Finaliza o pedido, enviando-o para a API e exibindo o alerta do pedido recém-criado.
      */
     async function checkout() {
         if (cart.length === 0) {
@@ -405,11 +361,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                //alert(`Pedido ID: #${result.id.substring(0, 8)}) enviado com sucesso!`);
-                
-                // --- NOVO: CHAMA A FUNÇÃO PARA EXIBIR O ÚLTIMO PEDIDO CRIADO ---
-                await displayLastOrder(); // Garante que o alerta do último pedido só apareça após o sucesso do checkout
-                // --- FIM DA NOVIDADE ---
+               
+                // NOVO: Busca e exibe os detalhes do pedido recém-criado usando seu ID
+                try {
+                    const orderId = result.id; // ID do pedido recém-criado
+                    const singleOrderResponse = await fetch(`${API_BASE_URL}/api/v1/orders/${orderId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'accept': 'application/json'
+                        }
+                    });
+
+                    if (handleAuthError(singleOrderResponse)) return;
+
+                    const singleOrderResult = await singleOrderResponse.json();
+
+                    if (singleOrderResponse.ok) {
+                        const lastOrder = singleOrderResult; // O resultado já é o objeto do pedido
+                        const totalAmount = typeof lastOrder.total_amount === 'number' 
+                                          ? lastOrder.total_amount.toFixed(2) 
+                            : 'N/A';
+
+                        alert(`Pedido Criado:
+Nº: ${lastOrder.locator}
+ID: #${lastOrder.id.substring(0, 8)}                         
+Observações: ${lastOrder.notes || 'Nenhuma'}`);
+
+                    } else {
+                        console.error('Erro ao buscar detalhes do pedido recém-criado:', singleOrderResult.detail || singleOrderResponse.statusText);
+                        alert('Não foi possível carregar os detalhes do pedido recém-criado.');
+                    }
+                } catch (fetchError) {
+                    console.error('Erro de rede ao buscar detalhes do pedido recém-criado:', fetchError);
+                    alert('Erro de conexão ao tentar buscar os detalhes do pedido.');
+                }
+                // FIM DA NOVIDADE
 
                 cart = [];
                 localStorage.removeItem('cart');
@@ -420,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (DOM.orderNotesInput) {
                     DOM.orderNotesInput.value = '';
                 }
-                displayEstimatedTime();
+                displayEstimatedTime(); // Atualiza a estimativa de tempo após o pedido
             } else {
                 alert(`Erro ao finalizar pedido: ${result.detail || result.message || response.statusText}`);
                 console.error('Erro ao finalizar pedido:', result);

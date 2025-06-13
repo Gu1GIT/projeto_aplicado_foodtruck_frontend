@@ -2,8 +2,7 @@
 // Lógica para operações CRUD de produtos.
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // --- Configurações e Referências ---
-    const API_BASE_URL = window.API_BASE_URL ; 
+    // --- Configurações e Referências ---   
 
     const ELEMENTS = {
         logoutBtn: document.getElementById('logoutBtn'),

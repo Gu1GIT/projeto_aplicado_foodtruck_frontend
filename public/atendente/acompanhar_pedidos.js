@@ -250,7 +250,7 @@ async function carregarTodosPedidos() {
                     const transicoesStatus = {
                         [STATUS_PEDIDO.PENDENTE]: [STATUS_PEDIDO.EM_PREPARACAO, STATUS_PEDIDO.CANCELADO],
                         [STATUS_PEDIDO.EM_PREPARACAO]: [STATUS_PEDIDO.CONCLUIDO, STATUS_PEDIDO.CANCELADO],
-                        [STATUS_PEDIDO.CONCLUIDO]: [STATUS_PEDIDO.CANCELADO],
+                        [STATUS_PEDIDO.CONCLUIDO]: [],
                         [STATUS_PEDIDO.CANCELADO]: [STATUS_PEDIDO.PENDENTE]
                     };
 

@@ -6,3 +6,6 @@
 const API_BASE_URL = 'http://foodtruck.docker.localhost/';
 //const API_BASE_URL = 'http://localhost:8000/'; // Se estiver rodando localmente
 //const API_BASE_URL = 'http://89.117.33.177/';
+
+// Anexa a variável ao objeto global 'window'
+window.API_BASE_URL = API_BASE_URL;

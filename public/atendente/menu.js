@@ -1,112 +1,119 @@
 // public/cliente/menu.js
 // Lógica para carregar produtos por categoria em colunas e gerenciar o carrinho.
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 1. Referências a Elementos do DOM (agrupadas e padronizadas) ---
+    const DOM = {
+        // Navegação e usuário
+        adminMenuItem: document.querySelector('li > a[href="../admin/gerenciar_produtos.html"]'),
+        logoutBtn: document.getElementById('logoutBtn'),
+        
+        // Mensagens de estado
+        loadingMessage: document.getElementById('loadingMessage'),
+        noProductsMessage: document.getElementById('noProductsMessage'),
 
-    // OCULTAR MENU ADMIN PARA ATENDENTE E CHAPEIRO
-    const userRole = localStorage.getItem('userRole');
-    if (userRole === 'attendant' || userRole === 'kitchen') {
-        const menuItem = document.querySelector('li > a[href="../admin/gerenciar_produtos.html"]');
-        if (menuItem && menuItem.parentElement) {
-            menuItem.parentElement.style.display = 'none';
-        }
-    } 
-    // NOVO: Referência para o campo de observações
-    const orderNotesInput = document.getElementById('orderNotes');
+        // Listas de produtos por categoria
+        foodProductsList: document.getElementById('foodProductsList'),
+        drinkProductsList: document.getElementById('drinkProductsList'),
+        dessertProductsList: document.getElementById('dessertProductsList'),
+        snackProductsList: document.getElementById('snackProductsList'),
 
-    // Referências para os contêineres de cada categoria
-    const foodProductsList = document.getElementById('foodProductsList');
-    const drinkProductsList = document.getElementById('drinkProductsList');
-    const dessertProductsList = document.getElementById('dessertProductsList');
-    const snackProductsList = document.getElementById('snackProductsList');
+        // Contadores de categoria
+        countFood: document.getElementById('count-food'),
+        countDrink: document.getElementById('count-drink'),
+        countDessert: document.getElementById('count-dessert'),
+        countSnack: document.getElementById('count-snack'),
 
-    // Referências para os contadores de cada categoria
-    const countFood = document.getElementById('count-food');
-    const countDrink = document.getElementById('count-drink');
-    const countDessert = document.getElementById('count-dessert');
-    const countSnack = document.getElementById('count-snack');
+        // Carrinho (botão e contador)
+        viewCartBtn: document.getElementById('viewCartBtn'),
+        cartItemCount: document.getElementById('cartItemCount'),
 
-    const loadingMessage = document.getElementById('loadingMessage');
-    const noProductsMessage = document.getElementById('noProductsMessage');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const viewCartBtn = document.getElementById('viewCartBtn');
-    const cartItemCount = document.getElementById('cartItemCount');
+        // Estimativa de tempo
+        preparationTimeEstimate: document.getElementById('preparationTimeEstimate'),
+        estimatedMinutesSpan: document.getElementById('estimatedMinutes'),
+        pendingOrdersCountSpan: document.getElementById('pendingOrdersCount'),
 
-    // Elemento para a estimativa de tempo
-    const preparationTimeEstimate = document.getElementById('preparationTimeEstimate');
-    const estimatedMinutesSpan = document.getElementById('estimatedMinutes');
+        // Modal do Carrinho
+        cartModal: document.getElementById('cartModal'),
+        closeButton: document.querySelector('.close-button'),
+        cartItemsList: document.getElementById('cartItems'),
+        cartTotalSpan: document.getElementById('cartTotal'),
+        clearCartBtn: document.getElementById('clearCartBtn'),
+        checkoutBtn: document.getElementById('checkoutBtn'),
+        orderNotesInput: document.getElementById('orderNotes'), // Campo de observações
+        productsBoard: document.querySelector('.products-board') // Board de produtos para delegação de eventos
+    };
 
-     // NOVO: Referência para o contador de pedidos pendentes/em preparo
-     const pendingOrdersCountSpan = document.getElementById('pendingOrdersCount');
-
-    // Modal do Carrinho
-    const cartModal = document.getElementById('cartModal');
-    const closeButton = document.querySelector('.close-button');
-    const cartItemsList = document.getElementById('cartItems');
-    const cartTotalSpan = document.getElementById('cartTotal');
-    const clearCartBtn = document.getElementById('clearCartBtn');
-    const checkoutBtn = document.getElementById('checkoutBtn');
-
-    let cart = JSON.parse(localStorage.getItem('cart')) || []; // Carrega carrinho do localStorage
+    // --- 2. Variáveis de Estado Globais (com inicialização padrão) ---
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let products = []; // Para armazenar os produtos carregados
-
     const accessToken = localStorage.getItem('accessToken');
-    const currentOrderLocator = localStorage.getItem('currentOrder'); // O 'locator' (mesa/senha) do pedido
+    const currentOrderLocator = localStorage.getItem('currentOrder');
 
-    // --- Validação de Autenticação ---
-    if (!accessToken) {
-        alert('Você precisa estar logado para acessar esta página.');
+    // --- 3. Constantes ---
+    const CATEGORY_MAP = {
+        FOOD: DOM.foodProductsList,
+        DRINK: DOM.drinkProductsList,
+        DESSERT: DOM.dessertProductsList,
+        SNACK: DOM.snackProductsList
+    };
+
+    const COUNT_MAP = {
+        FOOD: DOM.countFood,
+        DRINK: DOM.countDrink,
+        DESSERT: DOM.countDessert,
+        SNACK: DOM.countSnack
+    };
+    
+    const ESTIMATED_TIME_PER_ORDER_BLOCK = 8; // Em minutos
+    const ORDERS_PER_BLOCK = 2; // Número de pedidos por bloco de tempo
+    const REFRESH_INTERVAL_MS = 30000; // 30 segundos
+
+    // --- 4. Funções Utilitárias ---
+
+    /**
+     * Redireciona para a página de login e limpa o armazenamento local em caso de erro de autenticação.
+     */
+    function redirectToLoginAndClearStorage() {
+        alert('Sessão expirada ou acesso negado. Faça login novamente.');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('currentOrder');
+        localStorage.removeItem('cart');
         window.location.href = '../index.html';
-        return;
     }
 
-    // --- Configuração da API_BASE_URL ---
-    // Presumindo que API_BASE_URL é definida em common.js, que é carregado antes.
-    if (typeof API_BASE_URL === 'undefined') {
-        console.error("API_BASE_URL não está definida. Verifique common.js ou seu escopo.");
-        alert("Erro de configuração: API_BASE_URL não encontrada.");
-        return;
-    }
-
-    // --- Logout ---
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('currentOrder'); // Limpa o localizador do pedido também
-            localStorage.removeItem('cart'); // Limpa o carrinho ao sair
-            window.location.href = '../index.html';
-        });
-    }
-
-    // --- Tratamento de Erros de Autenticação/Autorização da API ---
+    /**
+     * Lida com erros de autenticação e autorização de respostas da API.
+     * @param {Response} response - A resposta da requisição Fetch.
+     * @returns {boolean} True se houve um erro de autenticação/autorização e o tratamento foi iniciado.
+     */
     function handleAuthError(response) {
         if (response.status === 401 || response.status === 403) {
-            alert('Sessão expirada ou acesso negado. Faça login novamente.');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('currentOrder');
-            localStorage.removeItem('cart');
-            window.location.href = '../index.html';
+            redirectToLoginAndClearStorage();
             return true;
         }
         return false;
     }
 
-    // --- Atualiza o contador de itens no carrinho no cabeçalho ---
+    /**
+     * Atualiza o contador de itens no ícone do carrinho no cabeçalho.
+     */
     function updateCartCount() {
         const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-        cartItemCount.textContent = totalItems;
+        DOM.cartItemCount.textContent = totalItems;
     }
 
-    // --- Renderiza o carrinho no modal ---
+    /**
+     * Renderiza os itens do carrinho no modal.
+     */
     function renderCart() {
-        cartItemsList.innerHTML = '';
+        DOM.cartItemsList.innerHTML = '';
         let total = 0;
 
         if (cart.length === 0) {
-            cartItemsList.innerHTML = '<li class="empty-cart-message">Seu carrinho está vazio.</li>';
-            cartTotalSpan.textContent = '0.00';
-            checkoutBtn.disabled = true; // Desabilita o botão se o carrinho estiver vazio
+            DOM.cartItemsList.innerHTML = '<li class="empty-cart-message">Seu carrinho está vazio.</li>';
+            DOM.cartTotalSpan.textContent = '0.00';
+            DOM.checkoutBtn.disabled = true;
             return;
         }
 
@@ -121,15 +128,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <button class="remove-from-cart-btn btn-danger" data-id="${item.id}">Remover</button>
                 </div>
             `;
-            cartItemsList.appendChild(li);
+            DOM.cartItemsList.appendChild(li);
             total += item.price * item.quantity;
         });
 
-        cartTotalSpan.textContent = total.toFixed(2);
-        checkoutBtn.disabled = false; // Habilita o botão se houver itens no carrinho
+        DOM.cartTotalSpan.textContent = total.toFixed(2);
+        DOM.checkoutBtn.disabled = false;
     }
 
-    // --- Adicionar/Remover do Carrinho ---
+    /**
+     * Adiciona um produto ao carrinho ou aumenta sua quantidade se já existir.
+     * @param {object} product - O objeto do produto a ser adicionado.
+     */
     function addToCart(product) {
         const existingItem = cart.find(item => item.id === product.id);
         if (existingItem) {
@@ -139,15 +149,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         localStorage.setItem('cart', JSON.stringify(cart));
         updateCartCount();
-        renderCart(); // Para atualizar o modal se estiver aberto
+        renderCart();
     }
 
+    /**
+     * Atualiza a quantidade de um item no carrinho.
+     * @param {string} productId - O ID do produto.
+     * @param {number} change - O valor a ser adicionado/removido da quantidade (ex: 1, -1).
+     */
     function updateCartItemQuantity(productId, change) {
         const itemIndex = cart.findIndex(item => item.id === productId);
         if (itemIndex > -1) {
             cart[itemIndex].quantity += change;
             if (cart[itemIndex].quantity <= 0) {
-                cart.splice(itemIndex, 1); // Remove se a quantidade for 0 ou menos
+                cart.splice(itemIndex, 1);
             }
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
@@ -155,6 +170,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    /**
+     * Remove um produto completamente do carrinho.
+     * @param {string} productId - O ID do produto a ser removido.
+     */
     function removeFromCart(productId) {
         cart = cart.filter(item => item.id !== productId);
         localStorage.setItem('cart', JSON.stringify(cart));
@@ -162,18 +181,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCart();
     }
 
-    // --- Função para Carregar Produtos (Requisição GET) ---
+    /**
+     * Cria e retorna um card de produto HTML.
+     * @param {object} product - O objeto do produto.
+     * @returns {HTMLElement} O elemento div do card do produto.
+     */
+    function createProductCard(product) {
+        const productCard = document.createElement('div');
+        productCard.classList.add('product-card');
+        productCard.innerHTML = `
+            <div class="product-header">
+                <h3>${product.name}</h3>
+                <span class="product-category">${product.category}</span>
+            </div>
+            <p class="product-description">${product.description || 'Sem descrição.'}</p>
+            <p class="product-price">R$ ${product.price.toFixed(2)}</p>
+            <button class="add-to-cart-btn btn-primary" data-id="${product.id}">Adicionar ao Carrinho</button>
+        `;
+        return productCard;
+    }
+
+    /**
+     * Carrega os produtos da API e os exibe nas categorias correspondentes.
+     */
     async function loadProducts() {
-        loadingMessage.style.display = 'block';
-        noProductsMessage.style.display = 'none';
+        DOM.loadingMessage.style.display = 'block';
+        DOM.noProductsMessage.style.display = 'none';
 
-        // Limpa todas as colunas
-        foodProductsList.innerHTML = '';
-        drinkProductsList.innerHTML = '';
-        dessertProductsList.innerHTML = '';
-        snackProductsList.innerHTML = '';
-
-        // Reseta contadores
+        // Limpa todas as colunas e reseta contadores
+        Object.values(CATEGORY_MAP).forEach(list => list.innerHTML = '');
         let counts = { FOOD: 0, DRINK: 0, DESSERT: 0, SNACK: 0 };
 
         try {
@@ -185,103 +221,70 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            if (handleAuthError(response)) {
-                loadingMessage.style.display = 'none';
-                return;
-            }
+            if (handleAuthError(response)) return;
 
             const result = await response.json();
 
             if (response.ok) {
-                products = result.products; // Armazena produtos globalmente
-                loadingMessage.style.display = 'none';
+                products = result.products;
+                DOM.loadingMessage.style.display = 'none';
 
                 if (!products || products.length === 0) {
-                    noProductsMessage.style.display = 'block';
+                    DOM.noProductsMessage.style.display = 'block';
                 } else {
-                    // Distribui os produtos nas colunas corretas
                     products.forEach(product => {
-                        const productCard = document.createElement('div');
-                        productCard.classList.add('product-card');
-
-                        productCard.innerHTML = `
-                            <div class="product-header">
-                                <h3>${product.name}</h3>
-                                <span class="product-category">${product.category}</span>
-                            </div>
-                            <p class="product-description">${product.description || 'Sem descrição.'}</p>
-                            <p class="product-price">R$ ${product.price.toFixed(2)}</p>
-                            <button class="add-to-cart-btn btn-primary" data-id="${product.id}">Adicionar ao Carrinho</button>
-                        `;
-
-                        // Adiciona o card à coluna correta
-                        switch (product.category.toUpperCase()) {
-                            case 'FOOD':
-                                foodProductsList.appendChild(productCard);
-                                counts.FOOD++;
-                                break;
-                            case 'DRINK':
-                                drinkProductsList.appendChild(productCard);
-                                counts.DRINK++;
-                                break;
-                            case 'DESSERT':
-                                dessertProductsList.appendChild(productCard);
-                                counts.DESSERT++;
-                                break;
-                            case 'SNACK':
-                                snackProductsList.appendChild(productCard);
-                                counts.SNACK++;
-                                break;
-                            default:
-                                console.warn('Categoria de produto desconhecida:', product.category);
+                        const productCard = createProductCard(product);
+                        const categoryList = CATEGORY_MAP[product.category.toUpperCase()];
+                        if (categoryList) {
+                            categoryList.appendChild(productCard);
+                            counts[product.category.toUpperCase()]++;
+                        } else {
+                            console.warn('Categoria de produto desconhecida:', product.category);
                         }
                     });
 
                     // Atualiza os contadores
-                    countFood.textContent = ` (${counts.FOOD})`;
-                    countDrink.textContent = ` (${counts.DRINK})`;
-                    countDessert.textContent = ` (${counts.DESSERT})`;
-                    countSnack.textContent = ` (${counts.SNACK})`;
+                    Object.keys(COUNT_MAP).forEach(category => {
+                        COUNT_MAP[category].textContent = ` (${counts[category]})`;
+                    });
                 }
             } else {
-                loadingMessage.style.display = 'none';
-                noProductsMessage.textContent = `Erro ao carregar produtos: ${result.detail || result.message || response.statusText}`;
-                noProductsMessage.style.display = 'block';
+                DOM.loadingMessage.style.display = 'none';
+                DOM.noProductsMessage.textContent = `Erro ao carregar produtos: ${result.detail || result.message || response.statusText}`;
+                DOM.noProductsMessage.style.display = 'block';
                 console.error('Erro ao carregar produtos:', result.detail || result.message || response.statusText);
             }
         } catch (error) {
             console.error('Erro na requisição de produtos:', error);
-            loadingMessage.style.display = 'none';
-            noProductsMessage.textContent = 'Não foi possível conectar ao servidor.';
-            noProductsMessage.style.display = 'block';
+            DOM.loadingMessage.style.display = 'none';
+            DOM.noProductsMessage.textContent = 'Não foi possível conectar ao servidor.';
+            DOM.noProductsMessage.style.display = 'block';
         }
     }
 
-    // --- Lógica de cálculo de tempo ---
+    /**
+     * Calcula a estimativa de tempo de preparo baseada no número de pedidos pendentes/em preparo.
+     * @param {number} pendingOrProcessingOrders - Número de pedidos com status PENDING ou PROCESSING.
+     * @returns {number} O tempo estimado em minutos.
+     */
     function calculateEstimatedTime(pendingOrProcessingOrders) {
         if (pendingOrProcessingOrders === 0) {
-            return 8; // Se não há pedidos na fila, o primeiro leva 8 min
+            return ESTIMATED_TIME_PER_ORDER_BLOCK; // Se não há pedidos na fila, o primeiro leva o tempo base
         }
         // Calcula o tempo base para os pedidos existentes na fila
-        const baseBlocks = Math.ceil((pendingOrProcessingOrders + 1) / 2); // +1 para o pedido atual
-        const baseTime = baseBlocks * 8; // Cada bloco leva 8 minutos        
+        const baseBlocks = Math.floor((pendingOrProcessingOrders + 1) / ORDERS_PER_BLOCK); // +1 para o pedido atual
+        const baseTime = baseBlocks * ESTIMATED_TIME_PER_ORDER_BLOCK;
         return baseTime;
     }
 
-    // --- Função para exibir a estimativa de tempo ---
-   // public/cliente/menu.js
-
-// ... (código anterior) ...
-
-    // public/cliente/menu.js
-
-// ... (código anterior) ...
-
+    /**
+     * Busca o número de pedidos pendentes/em preparo e exibe a estimativa de tempo.
+     */
     async function displayEstimatedTime() {
         try {
             const queryParams = new URLSearchParams();
-            queryParams.append('status', 'PENDING'); // Mantemos estes para a requisição API
-            queryParams.append('status', 'PROCESSING'); // Mantemos estes para a requisição API
+            queryParams.append('status', 'PENDING');
+            queryParams.append('status', 'PROCESSING');
 
             const response = await fetch(`${API_BASE_URL}/api/v1/orders/?${queryParams.toString()}`, {
                 method: 'GET',
@@ -291,118 +294,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            if (handleAuthError(response)) {
-                return;
-            }
+            if (handleAuthError(response)) return;
 
             const result = await response.json();
 
             if (response.ok && result.orders) {
-                // MODIFICAÇÃO: Filtra os pedidos comparando o status em maiúsculas para ignorar a capitalização
                 const relevantOrders = result.orders.filter(order => {
-                    // Garante que order.status é uma string e converte para maiúsculas antes de comparar
-                    const orderStatusUpperCase = (order.status || '').toUpperCase(); 
+                    const orderStatusUpperCase = (order.status || '').toUpperCase();
                     return orderStatusUpperCase === 'PENDING' || orderStatusUpperCase === 'PROCESSING';
                 });
 
                 const pendingProcessingCount = relevantOrders.length;
                 const estimatedTime = calculateEstimatedTime(pendingProcessingCount);
-                
-                estimatedMinutesSpan.textContent = estimatedTime;
-                pendingOrdersCountSpan.textContent = pendingProcessingCount;
-                preparationTimeEstimate.style.display = 'block';
+
+                DOM.estimatedMinutesSpan.textContent = estimatedTime;
+                DOM.pendingOrdersCountSpan.textContent = pendingProcessingCount;
+                DOM.preparationTimeEstimate.style.display = 'block';
             } else {
                 console.error('Erro ao buscar pedidos para estimativa de tempo:', result.detail || response.statusText);
-                estimatedMinutesSpan.textContent = '--';
-                pendingOrdersCountSpan.textContent = '--';
-                preparationTimeEstimate.style.display = 'block';
+                DOM.estimatedMinutesSpan.textContent = '--';
+                DOM.pendingOrdersCountSpan.textContent = '--';
+                DOM.preparationTimeEstimate.style.display = 'block';
             }
         } catch (error) {
             console.error('Erro de rede ao buscar pedidos para estimativa de tempo:', error);
-            estimatedMinutesSpan.textContent = '--';
-            pendingOrdersCountSpan.textContent = '--';
-            preparationTimeEstimate.style.display = 'block';
+            DOM.estimatedMinutesSpan.textContent = '--';
+            DOM.pendingOrdersCountSpan.textContent = '--';
+            DOM.preparationTimeEstimate.style.display = 'block';
         }
     }
 
-// ... (código restante) ...
-
-// ... (código restante) ...
-
-
-    // --- Event Listeners ---
-
-    // Adicionar ao carrinho (delegação de evento no board de produtos)
-    const productsBoard = document.querySelector('.products-board');
-    productsBoard.addEventListener('click', (event) => {
-        if (event.target.classList.contains('add-to-cart-btn')) {
-            const productId = event.target.dataset.id;
-            const productToAdd = products.find(p => p.id === productId);
-            if (productToAdd) {
-                addToCart(productToAdd);
-                // Não alerta mais, pois o modal já mostra os itens
-                // alert(`${productToAdd.name} adicionado ao carrinho!`);
-            }
-        }
-    });
-
-    // Abrir Modal do Carrinho
-    viewCartBtn.addEventListener('click', () => {
-        renderCart();
-        cartModal.style.display = 'block';
-    });
-
-    // Fechar Modal do Carrinho
-    closeButton.addEventListener('click', () => {
-        cartModal.style.display = 'none';
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target === cartModal) {
-            cartModal.style.display = 'none';
-        }
-    });
-
-    // Ações do Carrinho (dentro do modal)
-    cartItemsList.addEventListener('click', (event) => {
-        const target = event.target;
-        const productId = target.dataset.id;
-
-        if (target.classList.contains('decrease-quantity')) {
-            updateCartItemQuantity(productId, -1);
-        } else if (target.classList.contains('increase-quantity')) {
-            updateCartItemQuantity(productId, 1);
-        } else if (target.classList.contains('remove-from-cart-btn')) {
-            removeFromCart(productId);
-        }
-    });
-
-    clearCartBtn.addEventListener('click', () => {
-        if (confirm('Tem certeza que deseja limpar o carrinho?')) {
-            cart = [];
-            localStorage.removeItem('cart');
-            updateCartCount();
-            renderCart();
-            // NOVO: Limpar o campo de observação ao limpar o carrinho
-            if (orderNotesInput) {
-                orderNotesInput.value = '';
-            }
-            alert('Carrinho limpo.');
-        }
-    });
-
-    checkoutBtn.addEventListener('click', async () => {
+    /**
+     * Finaliza o pedido, enviando-o para a API e exibindo o alerta do pedido recém-criado.
+     */
+    async function checkout() {
         if (cart.length === 0) {
             alert('Seu carrinho está vazio!');
             return;
         }
-
-        // DESCOMENTADO E CORRIGIDO: Validação do currentOrderLocator
-        /*if (!currentOrderLocator) {
-            alert('Erro: Localizador do pedido (mesa/senha) não encontrado. Por favor, faça login novamente.');
-            window.location.href = '../index.html'; // Redireciona para a página de login
-            return;
-        }*/
 
         const orderItems = cart.map(item => ({
             product_id: item.id,
@@ -410,8 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             price: item.price
         }));
 
-        // CORREÇÃO: Pega o valor do campo de observação
-        const notes = orderNotesInput ? orderNotesInput.value.trim() : ""; // Pega o valor do input, ou string vazia se o input não existir ou estiver vazio
+        const notes = DOM.orderNotesInput ? DOM.orderNotesInput.value.trim() : '';
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/v1/orders/`, {
@@ -424,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 body: JSON.stringify({
                     locator: currentOrderLocator,
                     items: orderItems,
-                    notes: notes // AGORA ESTÁ USANDO A VARIÁVEL 'notes' DO INPUT
+                    notes: notes
                 })
             });
 
@@ -433,19 +361,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await response.json();
 
             if (response.ok) {
-                // CORREÇÃO FINAL E DEFINITIVA: Usar result.locator e result.id diretamente da resposta da API
-                alert(`Pedido (ID: #${result.id.substring(0, 8)}) enviado com sucesso!`);
-                cart = []; // Limpa o carrinho após o pedido
+               
+                // NOVO: Busca e exibe os detalhes do pedido recém-criado usando seu ID
+                try {
+                    const orderId = result.id; // ID do pedido recém-criado
+                    const singleOrderResponse = await fetch(`${API_BASE_URL}/api/v1/orders/${orderId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'accept': 'application/json'
+                        }
+                    });
+
+                    if (handleAuthError(singleOrderResponse)) return;
+
+                    const singleOrderResult = await singleOrderResponse.json();
+
+                    if (singleOrderResponse.ok) {
+                        const lastOrder = singleOrderResult; // O resultado já é o objeto do pedido
+                        const totalAmount = typeof lastOrder.total_amount === 'number' 
+                                          ? lastOrder.total_amount.toFixed(2) 
+                            : 'N/A';
+
+                        alert(`Pedido Criado:
+Nº: ${lastOrder.locator}
+ID: #${lastOrder.id.substring(0, 8)}                         
+Observações: ${lastOrder.notes || 'Nenhuma'}`);
+
+                    } else {
+                        console.error('Erro ao buscar detalhes do pedido recém-criado:', singleOrderResult.detail || singleOrderResponse.statusText);
+                        alert('Não foi possível carregar os detalhes do pedido recém-criado.');
+                    }
+                } catch (fetchError) {
+                    console.error('Erro de rede ao buscar detalhes do pedido recém-criado:', fetchError);
+                    alert('Erro de conexão ao tentar buscar os detalhes do pedido.');
+                }
+                // FIM DA NOVIDADE
+
+                cart = [];
                 localStorage.removeItem('cart');
                 updateCartCount();
                 renderCart();
-                cartModal.style.display = 'none'; // Fecha o modal
+                DOM.cartModal.style.display = 'none';
 
-                // NOVO: Limpar o campo de observação após o pedido ser finalizado com sucesso
-                if (orderNotesInput) {
-                    orderNotesInput.value = '';
+                if (DOM.orderNotesInput) {
+                    DOM.orderNotesInput.value = '';
                 }
-
                 displayEstimatedTime(); // Atualiza a estimativa de tempo após o pedido
             } else {
                 alert(`Erro ao finalizar pedido: ${result.detail || result.message || response.statusText}`);
@@ -455,12 +416,102 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erro na requisição de finalização de pedido:', error);
             alert('Não foi possível conectar ao servidor para finalizar o pedido.');
         }
+    }
+
+    // --- 5. Inicialização e Configuração ---
+
+    // Validação de Autenticação inicial
+    if (!accessToken) {
+        alert('Você precisa estar logado para acessar esta página.');
+        window.location.href = '../index.html';
+        return;
+    }
+
+    // Ocultar menu admin para atendente e chapeiro
+    const userRole = localStorage.getItem('userRole');
+    if (userRole === 'attendant' || userRole === 'kitchen') {
+        if (DOM.adminMenuItem && DOM.adminMenuItem.parentElement) {
+            DOM.adminMenuItem.parentElement.style.display = 'none';
+        }
+    }
+
+    // Verificação de API_BASE_URL (assumindo common.js está carregado)
+    if (typeof API_BASE_URL === 'undefined') {
+        console.error("API_BASE_URL não está definida. Verifique common.js ou seu escopo.");
+        alert("Erro de configuração: API_BASE_URL não encontrada.");
+        return;
+    }
+
+    // --- 6. Event Listeners (centralizados e concisos) ---
+
+    // Logout
+    DOM.logoutBtn?.addEventListener('click', (event) => {
+        event.preventDefault();
+        redirectToLoginAndClearStorage();
     });
 
+    // Adicionar ao carrinho (delegação de evento)
+    DOM.productsBoard?.addEventListener('click', (event) => {
+        if (event.target.classList.contains('add-to-cart-btn')) {
+            const productId = event.target.dataset.id;
+            const productToAdd = products.find(p => p.id === productId);
+            if (productToAdd) {
+                addToCart(productToAdd);
+            }
+        }
+    });
 
-    // --- Inicialização ---
-    updateCartCount(); // Atualiza o contador de itens no carrinho ao carregar a página
-    loadProducts(); // Carrega os produtos ao iniciar a página
-    displayEstimatedTime(); // Exibe a estimativa de tempo ao carregar a página
-    setInterval(displayEstimatedTime, 30000); // Atualiza a cada 30 segundos
+    // Abrir Modal do Carrinho
+    DOM.viewCartBtn?.addEventListener('click', () => {
+        renderCart();
+        DOM.cartModal.style.display = 'block';
+    });
+
+    // Fechar Modal do Carrinho (botão "x" e clique fora)
+    DOM.closeButton?.addEventListener('click', () => {
+        DOM.cartModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === DOM.cartModal) {
+            DOM.cartModal.style.display = 'none';
+        }
+    });
+
+    // Ações do Carrinho (dentro do modal - delegação de evento)
+    DOM.cartItemsList?.addEventListener('click', (event) => {
+        const target = event.target;
+        const productId = target.dataset.id;
+
+        if (target.classList.contains('decrease-quantity')) {
+            updateCartItemQuantity(productId, -1);
+        } else if (target.classList.contains('increase-quantity')) {
+            updateCartItemQuantity(productId, 1);
+        } else if (target.classList.contains('remove-from-cart-btn')) {
+            removeFromCart(productId);
+        }
+    });
+
+    // Limpar Carrinho
+    DOM.clearCartBtn?.addEventListener('click', () => {
+        if (confirm('Tem certeza que deseja limpar o carrinho?')) {
+            cart = [];
+            localStorage.removeItem('cart');
+            updateCartCount();
+            renderCart();
+            if (DOM.orderNotesInput) {
+                DOM.orderNotesInput.value = '';
+            }
+            alert('Carrinho limpo.');
+        }
+    });
+
+    // Finalizar Pedido
+    DOM.checkoutBtn?.addEventListener('click', checkout);
+
+    // --- 7. Execução Inicial ---
+    updateCartCount();
+    loadProducts();
+    displayEstimatedTime();
+    setInterval(displayEstimatedTime, REFRESH_INTERVAL_MS);
 });

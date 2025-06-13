@@ -1,0 +1,83 @@
+/* public/assets/css/avaliar.css */
+
+/* ... (Mantenha todos os estilos existentes que você já tem) ... */
+
+/* Novos estilos para a lista de pedidos a serem avaliados */
+.orders-to-evaluate-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 280px ou mais */
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    max-height: 400px; /* Altura máxima para a lista rolável */
+    overflow-y: auto; /* Adiciona barra de rolagem se houver muitos pedidos */
+}
+
+.order-to-evaluate-card {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.order-to-evaluate-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    border-color: #007bff; /* Borda azul no hover */
+}
+
+.order-to-evaluate-card.selected {
+    border: 2px solid #007bff; /* Borda azul mais grossa quando selecionado */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); /* Anel de foco sutil */
+}
+
+.order-to-evaluate-card h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    color: #333;
+    background-color: #e9ecef;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.order-to-evaluate-card p {
+    margin: 5px 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.order-to-evaluate-card p strong {
+    color: #007bff;
+}
+
+/* Estilo para o card de input de nota */
+#ratingInputCard {
+    margin-top: 25px; /* Espaço para separar da lista */
+    padding: 20px;
+    background-color: #f0f8ff; /* Cor mais suave para este card */
+    border: 1px solid #b3d9ff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#ratingInputCard h3 {
+    text-align: center;
+    color: #007bff;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #cce0ff;
+}
+
+#ratingInputCard span {
+    font-weight: bold;
+}

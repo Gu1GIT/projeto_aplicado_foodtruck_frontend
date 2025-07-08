@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Página para avaliar pedidos e visualizar ranking de produtos.">
     <title>Atendente - Avaliar Pedidos e Ranking</title>
     <link rel="stylesheet" href="../../assets/css/style.css">
-    <link rel="stylesheet" href="../../assets/css/avaliar.css"> </head>
+    <link rel="stylesheet" href="../../assets/css/avaliar.css">
+</head>
+
 <body>
     <header>
         <div class="container header-container">
@@ -24,14 +27,16 @@
         <section id="evaluate-order-section">
             <h2>Avaliar Novos Pedidos Concluídos</h2>
             <p id="evalOrdersLoading" class="message">Carregando pedidos concluídos para avaliação...</p>
-            <p id="noEvalOrdersMessage" class="message" style="display: none;">Nenhum pedido concluído disponível para avaliação no momento.</p>
-            
+            <p id="noEvalOrdersMessage" class="message" style="display: none;">Nenhum pedido concluído disponível para
+                avaliação no momento.</p>
+
             <div class="orders-list-container" id="ordersToEvaluateList">
-                </div>
+            </div>
 
             <div id="ratingInputCard" class="form-card" style="display: none;">
                 <h3>Atribuir Nota ao Pedido: <span id="selectedOrderLocator"></span></h3>
-                <p>Status: <span id="selectedOrderStatus"></span> | Total: R$ <span id="selectedOrderTotal"></span> | Criado em: <span id="selectedOrderCreatedAt"></span></p>
+                <p>Status: <span id="selectedOrderStatus"></span> | Total: R$ <span id="selectedOrderTotal"></span> |
+                    Criado em: <span id="selectedOrderCreatedAt"></span></p>
                 <div class="rating-input-group">
                     <label for="orderRatingInput">Nota (0-5):</label>
                     <input type="number" id="orderRatingInput" min="0" max="5" step="0.5" placeholder="Ex: 4.5">
@@ -41,16 +46,19 @@
             </div>
         </section>
 
-        <hr> <section id="evaluated-orders-section">
+        <hr>
+        <section id="evaluated-orders-section">
             <h2>Pedidos Já Avaliados</h2>
             <p id="evaluatedOrdersLoading" class="message">Carregando pedidos avaliados...</p>
-            <p id="noEvaluatedOrdersMessage" class="message" style="display: none;">Nenhum pedido foi avaliado ainda.</p>
-            
+            <p id="noEvaluatedOrdersMessage" class="message" style="display: none;">Nenhum pedido foi avaliado ainda.
+            </p>
+
             <div class="orders-list-container" id="evaluatedOrdersList">
-                </div>
+            </div>
         </section>
 
-        <hr> <section id="product-ranking-section">
+        <hr>
+        <section id="product-ranking-section">
             <h2>Ranking de Produtos Avaliados</h2>
             <p id="rankingLoadingMessage" class="message">Carregando ranking...</p>
             <p id="noRankingMessage" class="message" style="display: none;">Nenhum produto avaliado ainda.</p>
@@ -63,7 +71,7 @@
                     </tr>
                 </thead>
                 <tbody id="rankingTableBody">
-                    </tbody>
+                </tbody>
             </table>
         </section>
     </main>
@@ -75,6 +83,7 @@
     </footer>
 
     <script src="../../assets/js/common.js"></script>
-    <script src="registrar_avaliacao.js"></script>
+    <script src="../../assets/js/registrar_avaliacao.js"></script>
 </body>
+
 </html>

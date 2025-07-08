@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/atendente_menu.css">
 </head>
+
 <body>
     <header>
         <div class="container">
@@ -16,8 +18,8 @@
                     <li><a href="#" id="viewCartBtn">Ver Carrinho (<span id="cartItemCount">0</span>)</a></li>
                     <li><a href="acompanhar_pedidos.html">Acompanhar Pedidos</a></li>
                     <li><a href="registrar_avaliacao.html">Avaliar Pedidos</a></li>
-                    <li><a href="../admin/gerenciar_produtos.html">Gerenciar Produtos</a></li>                    
-                    <li><a href="#" id="logoutBtn">Sair</a></li>                 
+                    <li><a href="../admin/gerenciar_produtos.html">Gerenciar Produtos</a></li>
+                    <li><a href="#" id="logoutBtn">Sair</a></li>
                 </ul>
             </nav>
         </div>
@@ -28,7 +30,8 @@
             <h2>Nossos Produtos</h2>
             <div id="preparationTimeEstimate" class="time-estimate-box">
                 <p>Tempo de preparo estimado para o seu pedido: <span id="estimatedMinutes">--</span> minutos.</p>
-                <p>Pedidos em preparo/pendentes: <span id="pendingOrdersCount">--</span></p> </div>
+                <p>Pedidos em preparo/pendentes: <span id="pendingOrdersCount">--</span></p>
+            </div>
             </div>
 
             <p id="loadingMessage" class="message">Carregando produtos...</p>
@@ -38,25 +41,25 @@
                 <div class="category-column" id="column-food">
                     <h3>Comidas <span class="product-count" id="count-food"> (0)</span></h3>
                     <div class="products-grid" id="foodProductsList">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="category-column" id="column-drink">
                     <h3>Bebidas <span class="product-count" id="count-drink"> (0)</span></h3>
                     <div class="products-grid" id="drinkProductsList">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="category-column" id="column-dessert">
                     <h3>Sobremesas <span class="product-count" id="count-dessert"> (0)</span></h3>
                     <div class="products-grid" id="dessertProductsList">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="category-column" id="column-snack">
                     <h3>Lanches <span class="product-count" id="count-snack"> (0)</span></h3>
                     <div class="products-grid" id="snackProductsList">
-                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -66,7 +69,7 @@
                 <span class="close-button">&times;</span>
                 <h2>Seu Carrinho</h2>
                 <ul id="cartItems">
-                    </ul>
+                </ul>
                 <p>Total: R$ <span id="cartTotal">0.00</span></p>
                 <div class="order-notes-section">
                     <label for="orderNotes">Observações do Pedido:</label>
@@ -87,6 +90,7 @@
     </footer>
 
     <script src="../../assets/js/common.js"></script>
-    <script src="menu.js"></script>
+    <script src="../../assets/js/menu.js"></script>
 </body>
+
 </html>

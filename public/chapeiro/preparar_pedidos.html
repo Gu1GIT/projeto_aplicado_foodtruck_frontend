@@ -1,28 +1,33 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interface do Chapeiro para gestão e acompanhamento de pedidos de lanchonete por status.">
-    <title>Chapeiro - Preparar Pedidos</title> <link rel="stylesheet" href="../../assets/css/style.css">
+    <meta name="description"
+        content="Interface do Chapeiro para gestão e acompanhamento de pedidos de lanchonete por status.">
+    <title>Chapeiro - Preparar Pedidos</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../assets/css/chapeiro.css">
 </head>
+
 <body>
     <header>
         <h1>Chapeiro - Preparar Pedidos</h1>
-            <nav>
-                <ul>
+        <nav>
+            <ul>
                 <li><a href="#" id="logoutBtn">Sair</a></li>
-                </ul>
-            </nav>
+            </ul>
+        </nav>
         </div>
     </header>
 
     <main class="container">
         <section id="orders-section">
-            <h2>Gestão de Pedidos por Status</h2>          
+            <h2>Gestão de Pedidos por Status</h2>
             <p id="loadingMessage" class="message">Carregando pedidos...</p>
-            <p id="noOrdersMessage" class="message" style="display: none;">Nenhum pedido encontrado nos status visíveis.</p>
+            <p id="noOrdersMessage" class="message" style="display: none;">Nenhum pedido encontrado nos status visíveis.
+            </p>
 
             <div class="filter-controls-container">
                 <button id="toggleFilterBtn" class="btn-primary filter-toggle-btn">Ver Pedidos de Outros Dias</button>
@@ -31,25 +36,25 @@
                 <div class="status-column" id="column-pending">
                     <h3>Pendentes <span class="order-count" id="count-pending"> (0)</span></h3>
                     <div class="orders-grid" id="pendingOrdersList">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="status-column" id="column-processing">
                     <h3>Em Preparo <span class="order-count" id="count-processing"> (0)</span></h3>
                     <div class="orders-grid" id="processingOrdersList">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="status-column" id="column-completed">
                     <h3>Concluídos <span class="order-count" id="count-completed"> (0)</span></h3>
                     <div class="orders-grid" id="completedOrdersList">
-                        </div>
+                    </div>
                 </div>
 
                 <div class="status-column" id="column-cancelled">
                     <h3>Cancelados <span class="order-count" id="count-cancelled"> (0)</span></h3>
                     <div class="orders-grid" id="cancelledOrdersList">
-                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -62,5 +67,7 @@
     </footer>
 
     <script src="../../assets/js/common.js"></script>
-    <script src="preparar_pedidos.js"></script> </body>
+    <script src="../../assets/js/preparar_pedidos.js"></script>
+</body>
+
 </html>
